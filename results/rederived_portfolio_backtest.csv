@@ -1,0 +1,2 @@
+observed_did_per100k,observed_rr,observed_rr_ci_low,observed_rr_ci_high,predicted_pop_rr,predicted_rr_low,predicted_rr_high,predicted_within_observed_ci
+-10.88000000000011,0.988,0.977,0.999,0.994,0.986,0.999,True

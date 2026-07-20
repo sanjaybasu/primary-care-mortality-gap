@@ -1,0 +1,7 @@
+bundle,condition,prevalence_highvuln,engagement,per_reached_HR,transmission,grade,population_rel_reduction,gap_closure_fraction,p_harmful_advice,p_incorrect_dx,net_positive,note,transmission_to_mortality,reach,required_per_patient_reduction_to_close_residual
+A disease-specific,hypertension,0.45,0.3,0.928,strong (BPLTTC),moderate,0.0097,,,,,,,,
+A disease-specific,diabetes (glycemic),0.15,0.3,1.0,weak/null (ACCORD),moderate,0.0,,,,,,,,
+A disease-specific (pooled),HTN+diabetes,,,,,,,0.0389,,,,,,,
+B generalist,,,,,,,,,0.08,0.286,False,net effect not established as positive; potential to widen the gap (backfire),,,
+C provider scribe,,,,,,,,,,,,no demonstrated decision/output change (Shin 2025),0.0,,
+C provider knowledge tool,,,,,,,,,,,,no demonstrated outcome/mortality effect (Tu 2025); threshold shown,,0.15,1.133

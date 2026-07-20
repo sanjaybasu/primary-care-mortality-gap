@@ -13,12 +13,15 @@ input is sourced in a JSON file; every run writes provenance (inputs hash, seed,
 
 ```bash
 export REDERIVE_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"   # optional timestamp stamp
-python3 combined-intervention-simulation/code/portfolio_model.py   # run portfolio first
-python3 ai-effectiveness-threshold/code/threshold_model.py         # threshold consumes portfolio
-python3 combined-intervention-simulation/code/cost_layer.py        # supplementary cost layer
-python3 make_tables.py && python3 make_figures.py                  # tables + figures
-python3 verification/verify_rederivation.py                        # determinism + invariants
-python3 verification/consistency_check.py                          # manuscript numbers <-> code
+python3 combined-intervention-simulation/code/portfolio_model.py          # combined-intervention (CRA) model
+python3 ai-effectiveness-threshold/code/threshold_model.py                # threshold + driver analysis
+python3 combined-intervention-simulation/code/validate_backtest.py        # Medicaid natural-experiment backtest
+python3 ai-effectiveness-threshold/code/validate_ai_transmission.py       # extract-replicate-transmit (AI)
+python3 ai-effectiveness-threshold/code/validate_ai_bundles.py            # three-bundle AI analysis
+python3 combined-intervention-simulation/code/cost_layer.py               # supplementary cost layer
+python3 make_tables.py && python3 make_figures.py                         # tables + figures
+python3 verification/verify_rederivation.py                               # determinism + invariants
+python3 verification/consistency_check.py                                 # manuscript numbers <-> code
 ```
 
 Inputs: `paper-*/code/inputs_*.json`. Outputs: `results/rederived_*`. Deterministic

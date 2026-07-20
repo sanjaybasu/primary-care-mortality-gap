@@ -74,6 +74,24 @@ def main():
         "prob_not_achievable_even_at_HR0 (reach too low)": float(np.mean(~achievable)),
     }
 
+    # ---- driver analysis (ANCOVA-style variance decomposition of the required HR) ----
+    # share of variance in the required HR attributable to structural closure vs reach,
+    # via drop-in-R^2 when each input is removed from an OLS of hr on (s, r).
+    ok = achievable
+    y = hr_draws[ok]; ss = s_draws[ok]; rr = r_draws[ok]
+    def r2(cols):
+        X = np.column_stack([np.ones_like(y)] + cols)
+        beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+        resid = y - X @ beta
+        return 1 - np.sum(resid**2) / np.sum((y - y.mean())**2)
+    r2_full = r2([ss, rr]); r2_wo_s = r2([rr]); r2_wo_r = r2([ss])
+    contrib_s = max(r2_full - r2_wo_s, 0.0); contrib_r = max(r2_full - r2_wo_r, 0.0)
+    tot = contrib_s + contrib_r if (contrib_s + contrib_r) > 0 else 1.0
+    drivers = {"r2_full": round(float(r2_full), 3),
+               "variance_share_reach": round(float(contrib_r / tot), 3),
+               "variance_share_structural_closure": round(float(contrib_s / tot), 3)}
+    pd.DataFrame([drivers]).to_csv(os.path.join(RESULTS, "rederived_threshold_drivers.csv"), index=False)
+
     # ---- scenario grid: required HR by (structural closure x reach) ----
     grid_rows = []
     for s in inp["scenarios_for_grid"]["structural_closure"]:
@@ -105,6 +123,9 @@ def main():
     print(f"PSA required HR median (95% interval): {psa['required_hr_median']:.2f} "
           f"({psa['required_hr_p2.5']:.2f} to {psa['required_hr_p97.5']:.2f})")
     print(f"P(requires HR < 0.90) = {psa['prob_requires_HR_below_0.90']:.2f}")
+    print(f"Driver analysis: reach explains {drivers['variance_share_reach']*100:.0f}% and "
+          f"structural closure {drivers['variance_share_structural_closure']*100:.0f}% of "
+          f"variance in the required HR (full R^2 {drivers['r2_full']:.2f})")
     print("Scenario grid (required AI HR among reached):")
     piv = grid.pivot(index="structural_closure", columns="ai_reach", values="required_HR")
     print(piv.to_string())

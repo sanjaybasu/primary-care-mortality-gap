@@ -82,6 +82,35 @@ if os.path.exists(cost_path):
     checks.append((port_txt, f"{round(cly['p2_5'], -3):,.0f}", "cost: cost per life-year 2.5%"))
     checks.append((port_txt, f"{round(cly['p97_5'], -3):,.0f}", "cost: cost per life-year 97.5%"))
 
+# --- retrospective natural-experiment backtest (threshold manuscript) ---
+bt_path = os.path.join(RESULTS, "rederived_portfolio_backtest.csv")
+if os.path.exists(bt_path):
+    bt = pd.read_csv(bt_path).iloc[0]
+    checks.append((thr_txt, f"{bt['predicted_pop_rr']:.3f}", "backtest predicted population RR"))
+    checks.append((thr_txt, f"{bt['observed_rr']:.3f}", "backtest observed RR"))
+    checks.append((thr_txt, f"{bt['observed_rr_ci_low']:.3f}", "backtest observed RR CI low"))
+    checks.append((thr_txt, f"{bt['observed_rr_ci_high']:.3f}", "backtest observed RR CI high"))
+
+# --- driver analysis (threshold manuscript) ---
+drv_path = os.path.join(RESULTS, "rederived_threshold_drivers.csv")
+if os.path.exists(drv_path):
+    drv = pd.read_csv(drv_path).iloc[0]
+    checks.append((thr_txt, f"{round(drv['variance_share_reach']*100):.0f}%", "driver: reach variance share"))
+
+# --- three-bundle AI analysis (threshold manuscript) ---
+bnd_path = os.path.join(RESULTS, "rederived_ai_bundles.csv")
+if os.path.exists(bnd_path):
+    bnd = pd.read_csv(bnd_path)
+    pooled = bnd.loc[bnd["bundle"] == "A disease-specific (pooled)", "gap_closure_fraction"]
+    if len(pooled) and pd.notna(pooled.iloc[0]):
+        checks.append((thr_txt, f"{round(pooled.iloc[0]*100):.0f}%", "bundle A gap closure"))
+    gen = bnd.loc[bnd["bundle"] == "B generalist"]
+    if len(gen):
+        if pd.notna(gen["p_harmful_advice"].iloc[0]):
+            checks.append((thr_txt, f"{round(gen['p_harmful_advice'].iloc[0]*100):.0f}%", "bundle B harmful advice"))
+        if pd.notna(gen["p_incorrect_dx"].iloc[0]):
+            checks.append((thr_txt, f"{round(gen['p_incorrect_dx'].iloc[0]*100):.0f}%", "bundle B incorrect dx"))
+
 fails = []
 for txt, s, desc in checks:
     ok = s in txt
