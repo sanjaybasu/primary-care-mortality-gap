@@ -1,0 +1,16 @@
+# GitHub gets code only — never data (restricted NHANES-NDI/NHIS-NDI/MEPS + processed)
+data/
+*/data/
+data/raw/
+data/individual/
+*.dat
+*.csv
+!results/*.csv
+*.parquet
+*.dta
+*.rds
+*.xlsx
+*.pt
+
+__pycache__/
+*.pyc

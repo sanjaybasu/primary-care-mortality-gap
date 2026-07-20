@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "description": "Transparent inputs for Paper F combined-intervention portfolio model. Every parameter carries value, uncertainty, source, evidence grade, and verification status. Effect sizes are all-cause relative mortality (rate/hazard ratio) among the population REACHED; coverage is the reachable/eligible fraction of the high-vulnerability (SVI Q4) population. Density-type interventions use coverage=1.0 with rr as the population effect of the stated increment.",
+    "status_legend": "verified = citation checked this build; provisional = defensible published value, to be finalized in literature-review + citation-management phase",
+    "gap_source": "CDC WONDER age-adjusted all-cause mortality by CDC SVI quartile; county_disparity_results.csv"
+  },
+  "gap": {
+    "baseline_highvuln_per_1000": 9.6,
+    "baseline_lowvuln_per_1000": 7.2,
+    "gap_per_1000": 2.4
+  },
+  "interventions": [
+    {"name": "Medicaid expansion", "rr": 0.96, "rr_low": 0.93, "rr_high": 0.99,
+     "coverage": 0.15, "coverage_low": 0.10, "coverage_high": 0.20,
+     "source": "Miller Johnson Wherry 2021 QJE; Lee 2022 Lancet Public Health; Sommers 2017 NEJM",
+     "grade": "moderate", "status": "provisional",
+     "note": "This corpus's own Callaway-Sant'Anna DiD implied RR 0.988 (~null); synthesis uses published protective estimates with wide CI to reflect tension."},
+    {"name": "Community health workers", "rr": 0.93, "rr_low": 0.90, "rr_high": 0.96,
+     "coverage": 0.30, "coverage_low": 0.20, "coverage_high": 0.40,
+     "source": "Kangovi 2018 JAMA IM RCT (PMID 30422224); Vasan 2020 Health Serv Res pooled (PMID 32643163)",
+     "grade": "moderate (mortality synthesized)", "status": "provisional",
+     "note": "Demonstrated effect is reduced hospitalization (pooled IRR 0.66); the mortality rr is literature-synthesized, not a direct trial endpoint. Effect among high-risk reached subset."},
+    {"name": "Integrated behavioral health", "rr": 0.94, "rr_low": 0.91, "rr_high": 0.97,
+     "coverage": 0.20, "coverage_low": 0.12, "coverage_high": 0.28,
+     "source": "Unutzer 2002 JAMA (IMPACT); CoCM meta-analyses",
+     "grade": "moderate", "status": "provisional",
+     "note": "Depression response high-grade; all-cause mortality link moderate."},
+    {"name": "FQHC expansion", "rr": 0.96, "rr_low": 0.93, "rr_high": 0.99,
+     "coverage": 0.25, "coverage_low": 0.15, "coverage_high": 0.35,
+     "source": "Ford 2022 J Prim Care Community Health; Wright 2015 Health Aff",
+     "grade": "low-moderate", "status": "provisional"},
+    {"name": "Physician workforce (+10 PCP/100k)", "rr": 0.95, "rr_low": 0.92, "rr_high": 0.98,
+     "coverage": 1.0, "coverage_low": 1.0, "coverage_high": 1.0,
+     "source": "Basu 2019 JAMA Intern Med; this study IV (2SLS -3.16/100k, p=0.14, not significant)",
+     "grade": "moderate", "status": "provisional",
+     "note": "Density effect: population-wide (coverage=1.0). NOTE this study's IV point estimate is NOT statistically significant; rr reflects published association."}
+  ],
+  "diminishing_returns_lambda": {"point": 0.10, "low": 0.0, "high": 0.30,
+     "note": "Overlap/diminishing-returns penalty on combined log relative-risk; interventions act on overlapping people and shared pathways."},
+  "psa": {"n_draws": 20000, "seed": 20260720}
+}

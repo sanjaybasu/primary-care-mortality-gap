@@ -1,0 +1,23 @@
+intervention,param,bound,value,closure
+Medicaid expansion,rr,low,0.93,0.3613288895649611
+Medicaid expansion,rr,high,0.99,0.33155640165305744
+Medicaid expansion,coverage,low,0.1,0.3398238351491569
+Medicaid expansion,coverage,high,0.2,0.35305604800902923
+Community health workers,rr,low,0.9,0.37668186109093593
+Community health workers,rr,high,0.96,0.316224480665388
+Community health workers,coverage,low,0.2,0.32293649237253996
+Community health workers,coverage,high,0.4,0.3699588705863053
+Integrated behavioral health,rr,low,0.91,0.3664142070960099
+Integrated behavioral health,rr,high,0.97,0.3264764717733044
+Integrated behavioral health,coverage,low,0.12,0.3304680663384669
+Integrated behavioral health,coverage,high,0.28,0.36241824681959356
+FQHC expansion,rr,low,0.93,0.37135937943893804
+FQHC expansion,rr,high,0.99,0.3215380444162257
+FQHC expansion,coverage,low,0.15,0.33315628062123626
+FQHC expansion,coverage,high,0.35,0.35972763929398344
+Physician workforce (+10 PCP/100k),rr,low,0.92,0.4504432029348693
+Physician workforce (+10 PCP/100k),rr,high,0.98,0.24276332159334224
+Physician workforce (+10 PCP/100k),coverage,low,1.0,0.3464392759743551
+Physician workforce (+10 PCP/100k),coverage,high,1.0,0.3464392759743551
+ALL (diminishing returns),lambda,low,0.0,0.38303078814400005
+ALL (diminishing returns),lambda,high,0.3,0.27214195909051986

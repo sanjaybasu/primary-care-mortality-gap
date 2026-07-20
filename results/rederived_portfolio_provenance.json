@@ -1,0 +1,10 @@
+{
+  "model": "Combined-intervention portfolio (transparent re-derivation)",
+  "inputs_sha256_16": "62998613dbfb944b",
+  "seed": 20260720,
+  "n_draws": 20000,
+  "python": "3.14.4",
+  "numpy": "2.3.5",
+  "pandas": "2.3.3",
+  "generated_utc": "2026-07-20T20:31:40Z"
+}

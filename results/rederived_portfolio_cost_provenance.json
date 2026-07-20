@@ -1,0 +1,11 @@
+{
+  "unit_costs_hash": "6fd5a1ffddac8092",
+  "seed": 20260720,
+  "n_draws": 20000,
+  "life_years_per_death": {
+    "point": 12.0,
+    "low": 8.0,
+    "high": 16.0,
+    "note": "Life-years gained per premature death averted in high-vulnerability adults (approx.)."
+  }
+}
