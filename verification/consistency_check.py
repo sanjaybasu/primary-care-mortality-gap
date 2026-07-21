@@ -37,6 +37,8 @@ checks += [
     (port_txt, f"{port['median']*100:.1f}%", "portfolio PSA median"),
     (port_txt, f"{port['p2.5']*100:.1f}%", "portfolio PSA 2.5%"),
     (port_txt, f"{port['p97.5']*100:.1f}%", "portfolio PSA 97.5%"),
+    (port_txt, f"{port['robust_median']*100:.1f}%", "portfolio evidence-robust median (HA)"),
+    (thr_txt, f"{round(port['robust_median']*100):.0f}%", "structural robustness note (MDM)"),
     (port_txt, "2.4 deaths per 1,000", "gap absolute"),
     (port_txt, "9.6", "high-vuln mortality"),
     (port_txt, "7.2", "low-vuln mortality"),

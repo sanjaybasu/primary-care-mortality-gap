@@ -30,10 +30,10 @@
      "source": "Ford 2022 J Prim Care Community Health; Wright 2015 Health Aff",
      "grade": "low-moderate", "status": "provisional"},
     {"name": "Physician workforce (+10 PCP/100k)", "rr": 0.95, "rr_low": 0.92, "rr_high": 0.98,
-     "coverage": 1.0, "coverage_low": 1.0, "coverage_high": 1.0,
+     "coverage": 1.0, "coverage_low": 1.0, "coverage_high": 1.0, "associational": true,
      "source": "Basu 2019 JAMA Intern Med; this study IV (2SLS -3.16/100k, p=0.14, not significant)",
      "grade": "moderate", "status": "provisional",
-     "note": "Density effect: population-wide (coverage=1.0). NOTE this study's IV point estimate is NOT statistically significant; rr reflects published association."}
+     "note": "Density effect: population-wide (coverage=1.0). Flagged associational: this study's IV point estimate is NOT statistically significant; rr reflects published association. Excluded from the evidence-robust subset."}
   ],
   "diminishing_returns_lambda": {"point": 0.10, "low": 0.0, "high": 0.30,
      "note": "Overlap/diminishing-returns penalty on combined log relative-risk; interventions act on overlapping people and shared pathways."},

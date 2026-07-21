@@ -99,6 +99,18 @@ def main():
         "prob_ge_75pct": float(np.mean(psa >= 0.75)),
     }
 
+    # ---- evidence-robust subset: exclude interventions flagged associational (physician supply) ----
+    robust_mask = np.array([not d.get("associational", False) for d in ivs])
+    point_robust = float(closure_fraction(rr_pt[robust_mask][:, None], cov_pt[robust_mask][:, None],
+                                          lam_pt, gap, base)[0])
+    psa_robust = closure_fraction(rr_draws[robust_mask], cov_draws[robust_mask], lam_draws, gap, base)
+    robust_summary = {
+        "robust_point_closure_fraction": point_robust,
+        "robust_median": float(np.median(psa_robust)),
+        "robust_p2.5": float(np.percentile(psa_robust, 2.5)),
+        "robust_p97.5": float(np.percentile(psa_robust, 97.5)),
+    }
+
     # ---- one-way sensitivity (tornado): each param to its CI/range, others at point ----
     tornado = []
     for i, d in enumerate(ivs):
@@ -137,11 +149,13 @@ def main():
         "generated_utc": os.environ.get("REDERIVE_TS", "set REDERIVE_TS for stamped run"),
     }
     pd.DataFrame([{"metric": "point_closure_fraction", "value": point},
-                  *[{"metric": kk, "value": vv} for kk, vv in psa_summary.items()]]
+                  *[{"metric": kk, "value": vv} for kk, vv in psa_summary.items()],
+                  *[{"metric": kk, "value": vv} for kk, vv in robust_summary.items()]]
                  ).to_csv(os.path.join(RESULTS, "rederived_portfolio_summary.csv"), index=False)
     pd.DataFrame(tornado).to_csv(os.path.join(RESULTS, "rederived_portfolio_tornado.csv"), index=False)
     pd.DataFrame(ablation).to_csv(os.path.join(RESULTS, "rederived_portfolio_ablation.csv"), index=False)
     np.save(os.path.join(RESULTS, "rederived_portfolio_psa_draws.npy"), psa)
+    np.save(os.path.join(RESULTS, "rederived_portfolio_robust_psa_draws.npy"), psa_robust)
     with open(os.path.join(RESULTS, "rederived_portfolio_provenance.json"), "w") as f:
         json.dump(prov, f, indent=2)
 
@@ -153,6 +167,9 @@ def main():
           f"({psa_summary['p2.5']*100:.1f}% to {psa_summary['p97.5']*100:.1f}%)")
     print(f"P(>=50% closed) = {psa_summary['prob_ge_50pct']:.2f} | "
           f"P(>=75% closed) = {psa_summary['prob_ge_75pct']:.2f}")
+    print(f"EVIDENCE-ROBUST (excl. associational physician supply): point {point_robust*100:.1f}%, "
+          f"median {robust_summary['robust_median']*100:.1f}% "
+          f"({robust_summary['robust_p2.5']*100:.1f}-{robust_summary['robust_p97.5']*100:.1f}%)")
     print("Leave-one-out marginal contributions (pp of gap):")
     for a in sorted(ablation, key=lambda x: -x["marginal_contribution"]):
         print(f"  {a['removed']:<38} {a['marginal_contribution']*100:5.1f} pp")

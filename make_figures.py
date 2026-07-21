@@ -57,20 +57,25 @@ def fig_threshold_heatmap():
 
 
 def fig_portfolio_psa():
-    psa = np.load(os.path.join(RESULTS, "rederived_portfolio_psa_draws.npy")) * 100
-    med, lo, hi = np.median(psa), np.percentile(psa, 2.5), np.percentile(psa, 97.5)
-    fig, ax = plt.subplots(figsize=(6.4, 4.2))
-    ax.hist(psa, bins=60, color=CB["blue"], alpha=0.85, edgecolor="white", linewidth=0.3)
-    for x, c, lab in [(med, CB["red"], f"median {med:.1f}%"),
-                      (lo, CB["grey"], f"2.5% {lo:.1f}%"), (hi, CB["grey"], f"97.5% {hi:.1f}%")]:
-        ax.axvline(x, color=c, linestyle="--", linewidth=1.3)
-    ax.axvline(50, color=CB["orange"], linestyle=":", linewidth=1.2)
-    ax.axvline(75, color=CB["orange"], linestyle=":", linewidth=1.2)
+    full = np.load(os.path.join(RESULTS, "rederived_portfolio_psa_draws.npy")) * 100
+    robust = np.load(os.path.join(RESULTS, "rederived_portfolio_robust_psa_draws.npy")) * 100
+    mfull, mrob = np.median(full), np.median(robust)
+    fig, ax = plt.subplots(figsize=(6.6, 4.2))
+    ax.hist(robust, bins=60, color=CB["green"], alpha=0.7, edgecolor="white", linewidth=0.3,
+            label=f"evidence-robust (median {mrob:.1f}%)")
+    ax.hist(full, bins=60, color=CB["blue"], alpha=0.5, edgecolor="white", linewidth=0.3,
+            label=f"including physician supply (median {mfull:.1f}%)")
+    ax.axvline(mrob, color=CB["green"], linestyle="--", linewidth=1.3)
+    ax.axvline(mfull, color=CB["blue"], linestyle="--", linewidth=1.3)
+    ax.axvline(50, color=CB["orange"], linestyle=":", linewidth=1.0)
+    ax.axvline(75, color=CB["orange"], linestyle=":", linewidth=1.0)
     ax.set_xlabel("Fraction of mortality gap closed (%)")
     ax.set_ylabel("Probabilistic draws")
     ax.set_title("Combined structural package: gap closure (20,000 draws)")
-    fig.text(0.5, -0.02, f"Median {med:.1f}% (95% interval {lo:.1f}-{hi:.1f}%); "
-             "dotted lines mark 50% and 75%.", ha="center", fontsize=8)
+    ax.legend(loc="upper right", fontsize=8)
+    fig.text(0.5, -0.02, "Evidence-robust package (Medicaid, community health workers, integrated "
+             "behavioral health, FQHC) versus the same package plus the associational physician-"
+             "supply effect; dotted lines mark 50% and 75%.", ha="center", fontsize=7.5, wrap=True)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_PORT, "exhibit1_gap_closure_psa.png"),
                 dpi=300, bbox_inches="tight")
