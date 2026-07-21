@@ -1,24 +1,45 @@
 {
   "_meta": {
-    "description": "Transparent inputs for Paper E AI-effectiveness threshold model. Replaces the omnibus 'HR approx 0.91 / five-fold' claim, which is absent from the pipeline (see RECONCILIATION_phase2.md). Structural-closure uncertainty is propagated from Paper F PSA draws.",
-    "status_legend": "verified = checked this build; provisional = to be finalized in literature-review + citation-management"
+    "model": "Recentered AI-effectiveness threshold: what clinical AI must do to offset the mortality attributable to primary-care erosion, without widening inequality.",
+    "target": "primary-care-supply-attributable excess mortality (NOT the poverty-driven SVI mortality gap)",
+    "framework": "NASEM 2021 Implementing High-Quality Primary Care",
+    "note_on_gradient": "Basu 2019 found the primary-care decline was NOT disproportionate by county poverty or race; it was concentrated in rural areas. We therefore apply the decline uniformly by vulnerability (loss proportional to baseline mortality) and locate inequality in the REACH gradient (lower AI uptake in high-vulnerability communities). Rural vs urban decline is reported as a sensitivity."
   },
-  "gap": {"baseline_highvuln_per_1000": 9.6, "gap_per_1000": 2.4,
-          "source": "CDC WONDER by CDC SVI quartile; county_disparity_results.csv"},
-  "ai_reach": {"point": 0.30, "low": 0.15, "high": 0.50,
-     "source": "assumption: reachable chronic-disease-management-eligible fraction of high-vuln (SVI Q4) population; anchored to digital-health uptake gradients (Rodriguez 2020 JAMA) and chronic-disease prevalence",
-     "status": "provisional",
-     "note": "Key sensitivity parameter. Universal reach (1.0) reported as an explicit upper-bound scenario to expose the omnibus's implicit assumption."},
-  "structural_closure_source": "rederived_F_psa_draws.npy (Paper F portfolio PSA); falls back to fixed scenarios if absent",
+  "mortality": {
+    "high_vuln_per_1000": 9.6,
+    "low_vuln_per_1000": 7.2,
+    "source": "CDC WONDER age-adjusted all-cause mortality by CDC Social Vulnerability Index quartile"
+  },
+  "pcp_supply": {
+    "baseline_per_100k": 46.6,
+    "current_per_100k": 41.4,
+    "decline_per_100k": 5.2,
+    "decline_range": {"low": 4.2, "high": 5.2},
+    "source": "Basu 2019 JAMA Intern Med: PCP density fell 46.6 to 41.4 per 100,000 nationally, 2005-2015 (within-county mean -5.2; -4.2 to -4.4 at primary-care-service-area and hospital-referral-region levels)",
+    "rural_decline_per_100k": 7.0,
+    "urban_decline_per_100k": 2.6,
+    "rural_urban_source": "Basu 2019: rural -7.0 vs urban -2.6 per 100,000"
+  },
+  "mortality_elasticity": {
+    "per_10pcp_cause_specific_reduction": {"cardiovascular": 0.009, "cancer": 0.010, "respiratory": 0.014},
+    "cause_shares_of_all_cause": {"cardiovascular": 0.30, "cancer": 0.21, "respiratory": 0.08},
+    "elasticity_range_per10_allcause": {"low": 0.004, "high": 0.010},
+    "source": "Basu 2019 JAMA Intern Med: per 10 additional PCP/100k, cause-specific mortality reductions of 0.9% (cardiovascular), 1.0% (cancer), 1.4% (respiratory); cause shares from CDC leading causes of death"
+  },
+  "ai_reach": {
+    "high_vuln": {"point": 0.20, "low": 0.10, "high": 0.40},
+    "low_vuln": {"point": 0.40, "low": 0.25, "high": 0.60},
+    "source": "assumption anchored to digital-health uptake gradients (Rodriguez 2020 JAMA), which are lower in high-vulnerability communities"
+  },
+  "adequacy_sensitivity": {
+    "shortage_per_100k": 14.5,
+    "source": "AAMC 2019 projection of up to ~48,000 PCP shortage by 2034 over ~330M population (Bazemore 2024); NASEM/AAMC-adequacy reference point for the secondary analysis"
+  },
   "benchmarks": {
-    "current_clinical_ai_hr": 1.00,
-    "current_admin_ai_hr": 0.99,
     "community_health_worker_hr": 0.93,
-    "note": "Required AI HR is compared to demonstrated effect sizes; source Kangovi 2018/2020 and this study's AI meta-analysis (null)."
-  },
-  "scenarios_for_grid": {
-    "structural_closure": [0.25, 0.35, 0.50, 0.75],
-    "ai_reach": [0.15, 0.30, 0.50, 1.00]
+    "digital_htn_transmitted_hr": 0.94,
+    "current_clinical_ai_hr": 1.00,
+    "source": "Kangovi 2018/2020 (CHW); BPLTTC-transmitted digital hypertension effect (this study); clinical AI mortality synthesis (null)"
   },
   "psa": {"n_draws": 20000, "seed": 20260720}
 }

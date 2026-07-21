@@ -4,7 +4,7 @@ Comprehensive consistency check: regenerate canonical numbers from result CSVs a
 each appears in the corresponding manuscript. Catches number drift between code and prose.
 Usage:  python3 verification/consistency_check.py
 """
-import os, sys
+import os, sys, json
 import pandas as pd
 
 PKG = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -20,130 +20,96 @@ APX_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "appendix",
 APX_PORT = os.path.join(NB, "combined-intervention-simulation", "appendix",
                         "supplementary_table_model_input_parameters.md")
 
-port = pd.read_csv(os.path.join(RESULTS, "rederived_portfolio_summary.csv")).set_index("metric")["value"]
-abl = pd.read_csv(os.path.join(RESULTS, "rederived_portfolio_ablation.csv"))
-thr = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv")).set_index("metric")["value"]
-grid = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_scenario_grid.csv"))
-
-BASELINE, GAP = 9.6, 2.4
-port_txt = open(MS_PORT).read()
 thr_txt = open(MS_THRESH).read()
 thr_apx = open(APX_THRESH).read() if os.path.exists(APX_THRESH) else ""
-
-checks = []  # (manuscript, expected_string, description)
-
-# --- portfolio ---
-checks += [
-    (port_txt, f"{port['point_closure_fraction']*100:.1f}%", "portfolio point closure"),
-    (port_txt, f"{port['median']*100:.1f}%", "portfolio PSA median"),
-    (port_txt, f"{port['p2.5']*100:.1f}%", "portfolio PSA 2.5%"),
-    (port_txt, f"{port['p97.5']*100:.1f}%", "portfolio PSA 97.5%"),
-    (port_txt, f"{port['robust_median']*100:.1f}%", "portfolio evidence-robust median (HA)"),
-    (thr_txt, f"{round(port['robust_median']*100):.0f}%", "structural robustness note (MDM)"),
-    (port_txt, "2.4 deaths per 1,000", "gap absolute"),
-    (port_txt, "9.6", "high-vuln mortality"),
-    (port_txt, "7.2", "low-vuln mortality"),
-]
-for _, r in abl.iterrows():
-    checks.append((port_txt, f"{r['marginal_contribution']*100:.1f}", f"ablation: {r['removed']}"))
-
-# --- threshold ---
-pt_hr = thr["point_required_HR (F median closure, reach=0.30)"]
-abs_red = BASELINE * (1 - pt_hr)  # required absolute reduction among reached at point
-checks += [
-    (thr_txt, f"{thr['required_hr_median']:.2f}", "threshold PSA median HR"),
-    (thr_txt, f"{thr['required_hr_p2.5']:.2f}", "threshold PSA 2.5% HR"),
-    (thr_txt, f"{thr['required_hr_p97.5']:.2f}", "threshold PSA 97.5% HR"),
-    (thr_txt, f"{abs_red:.1f}", "threshold required absolute reduction /1000 among reached"),
-    (thr_txt, "2.4 deaths per 1,000", "gap absolute"),
-    (thr_txt, "0.93", "CHW benchmark HR"),
-]
-# grid cells now live in the appendix (eTable S3)
-for _, r in grid.iterrows():
-    if r["required_HR"] > 0:
-        checks.append((thr_apx, f"{r['required_HR']:.3f}".rstrip("0").rstrip("."),
-                       f"grid s={r['structural_closure']} r={r['ai_reach']}"))
-
-# --- appendix parameter tables exist and match inputs.json ---
-import json
+port_txt = open(MS_PORT).read() if os.path.exists(MS_PORT) else ""
 port_apx = open(APX_PORT).read() if os.path.exists(APX_PORT) else ""
-pj = json.load(open(os.path.join(PKG, "combined-intervention-simulation", "code", "inputs.json")))
-for it in pj["interventions"]:
-    checks.append((port_apx, f"{it['rr']:.2f} ({it['rr_low']:.2f}-{it['rr_high']:.2f})",
-                   f"appendix rr matches inputs: {it['name']}"))
-checks.append((thr_apx, "9.6", "threshold appendix baseline present"))
 
-# --- supplementary cost-layer numbers (portfolio) ---
-cost_path = os.path.join(RESULTS, "rederived_portfolio_cost.csv")
-if os.path.exists(cost_path):
-    cost = pd.read_csv(cost_path).set_index("metric")
-    da = cost.loc["deaths_averted_per_100k_per_year", "median"]
-    cly = cost.loc["cost_per_life_year_usd"]
-    checks.append((port_txt, f"{da:.0f}", "cost: deaths averted per 100k median"))
-    checks.append((port_txt, f"{round(cly['median'], -3):,.0f}", "cost: cost per life-year median"))
-    checks.append((port_txt, f"{round(cly['p2_5'], -3):,.0f}", "cost: cost per life-year 2.5%"))
-    checks.append((port_txt, f"{round(cly['p97_5'], -3):,.0f}", "cost: cost per life-year 97.5%"))
+checks = []  # (text, expected_string, description)
 
-# --- retrospective natural-experiment backtest (threshold manuscript) ---
-bt_path = os.path.join(RESULTS, "rederived_portfolio_backtest.csv")
-if os.path.exists(bt_path):
-    bt = pd.read_csv(bt_path).iloc[0]
-    checks.append((thr_txt, f"{bt['predicted_pop_rr']:.3f}", "backtest predicted population RR"))
-    checks.append((thr_txt, f"{bt['observed_rr']:.3f}", "backtest observed RR"))
-    checks.append((thr_txt, f"{bt['observed_rr_ci_low']:.3f}", "backtest observed RR CI low"))
-    checks.append((thr_txt, f"{bt['observed_rr_ci_high']:.3f}", "backtest observed RR CI high"))
+# ======================= THRESHOLD (Medical Decision Making) =======================
+thr = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv")).set_index("metric")["value"]
+by = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_by_stratum.csv")).set_index("stratum")
+eq = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_equity.csv"))
+ade = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_adequacy.csv")).iloc[0]
+ru = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_rural_urban.csv")).set_index("locale")
 
-# --- driver analysis (threshold manuscript) ---
-drv_path = os.path.join(RESULTS, "rederived_threshold_drivers.csv")
-if os.path.exists(drv_path):
-    drv = pd.read_csv(drv_path).iloc[0]
-    checks.append((thr_txt, f"{round(drv['variance_share_reach']*100):.0f}%", "driver: reach variance share"))
+D_high = float(by.loc["high", "attributable_excess_per_1000"])
+D_low = float(by.loc["low", "attributable_excess_per_1000"])
+delta = float(thr["elasticity_per10_allcause_point"]) * (5.2 / 10.0)
+rural_req_high = 1 - float(ru.loc["rural", "rel_mortality_increase"]) / 0.20
+narrow_p = float(thr["prob_AI_narrows_gap_at_current_reach"])
+eq_chw = float(eq[eq["demonstrated_tool"] == "community_health_worker"]
+               ["high_vuln_reach_needed_to_not_widen"].iloc[0])
 
-# --- three-bundle AI analysis, cause-resolved + counterfactual (threshold manuscript) ---
+checks += [
+    (thr_txt, "9.6", "baseline mortality high-vulnerability"),
+    (thr_txt, "7.2", "baseline mortality low-vulnerability"),
+    (thr_txt, "46.6", "PCP supply 2005"),
+    (thr_txt, "41.4", "PCP supply 2015"),
+    (thr_txt, "5.2", "PCP supply decline"),
+    (thr_txt, f"{D_high:.3f}", "attributable excess high-vulnerability"),
+    (thr_txt, f"{D_low:.3f}", "attributable excess low-vulnerability"),
+    (thr_txt, f"{float(thr['required_HR_high_point']):.3f}", "required HR high point"),
+    (thr_txt, f"{float(thr['required_HR_low_point']):.3f}", "required HR low point"),
+    (thr_txt, f"{float(thr['required_HR_high_median']):.3f}", "required HR high median"),
+    (thr_txt, f"{float(thr['required_HR_high_p2.5']):.3f}", "required HR high 2.5%"),
+    (thr_txt, f"{float(thr['required_HR_high_p97.5']):.3f}", "required HR high 97.5%"),
+    (thr_txt, f"{round((1-narrow_p)*100):.0f}%", "share of draws AI widens the gap"),
+    (thr_txt, f"{round(eq_chw*100):.0f}%", "high-vuln reach needed to not widen"),
+    (thr_txt, "0.93", "CHW benchmark HR"),
+    (thr_txt, "0.94", "digital hypertension transmitted HR"),
+    (thr_txt, "7.0", "rural decline"),
+    (thr_txt, "2.6", "urban decline"),
+    (thr_txt, f"{float(ade['required_HR_high_at_point_reach']):.2f}", "adequacy required HR high"),
+    (thr_txt, f"{rural_req_high:.2f}", "rural required HR high"),
+    (thr_txt, f"{delta*100:.1f}%", "relative mortality rise from the loss"),
+    # appendix
+    (thr_apx, "9.6", "appendix baseline present"),
+    (thr_apx, f"{float(thr['required_HR_high_point']):.3f}", "appendix reach-grid required HR at 0.20"),
+    (thr_apx, f"{float(ade['attributable_excess_high_per_1000']):.3f}", "appendix adequacy excess"),
+    (thr_apx, "CHEERS 2022", "appendix CHEERS checklist present"),
+]
+
+# three-type analysis: chatbot unsafe-advice rate
 bnd_path = os.path.join(RESULTS, "rederived_ai_bundles.csv")
 if os.path.exists(bnd_path):
     bnd = pd.read_csv(bnd_path)
-    a = bnd[bnd["bundle"].str.startswith("A disease")]
-    if len(a) and "gap_closure_median" in bnd.columns and pd.notna(a["gap_closure_median"].iloc[0]):
-        checks.append((thr_txt, f"{a['gap_closure_median'].iloc[0]*100:.1f}%", "bundle A cause-resolved gap closure"))
     b = bnd[bnd["bundle"].str.startswith("B generalist")]
-    if len(b):
-        if "p_harmful_advice" in bnd.columns and pd.notna(b["p_harmful_advice"].iloc[0]):
-            checks.append((thr_txt, f"{round(b['p_harmful_advice'].iloc[0]*100):.0f}%", "bundle B harmful advice"))
-        if "crossover_high_acuity_fraction" in bnd.columns and pd.notna(b["crossover_high_acuity_fraction"].iloc[0]):
-            checks.append((thr_txt, f"{round(b['crossover_high_acuity_fraction'].iloc[0]*100):.0f}%", "bundle B acuity crossover"))
+    if len(b) and "p_harmful_advice" in bnd.columns and pd.notna(b["p_harmful_advice"].iloc[0]):
+        checks.append((thr_txt, f"{round(b['p_harmful_advice'].iloc[0]*100):.0f}%", "chatbot unsafe-advice rate"))
 
-# --- scenario analysis, one-way sensitivity, attainability (threshold manuscript) ---
-scen_path = os.path.join(RESULTS, "rederived_threshold_scenarios.csv")
-if os.path.exists(scen_path):
-    sc = pd.read_csv(scen_path)
-    base = sc[sc["scenario"] == "base case"].iloc[0]
-    opt = sc[sc["scenario"] == "optimistic"].iloc[0]
-    checks.append((thr_txt, f"{float(base['required_HR']):.2f}", "scenario base required HR"))
-    checks.append((thr_txt, f"{float(opt['required_HR']):.2f}", "scenario optimistic required HR"))
-
-tor_path = os.path.join(RESULTS, "rederived_threshold_tornado.csv")
-if os.path.exists(tor_path):
-    tor = pd.read_csv(tor_path).set_index("parameter")
-    checks.append((thr_txt, f"{float(tor.loc['AI reach','required_HR_at_high']):.2f}", "one-way reach high"))
-    checks.append((thr_txt, f"{float(tor.loc['structural gap closure','required_HR_at_low']):.2f}", "one-way closure low"))
-    checks.append((thr_txt, f"{float(tor.loc['structural gap closure','required_HR_at_high']):.2f}", "one-way closure high"))
-
-att_path = os.path.join(RESULTS, "rederived_threshold_attainability.csv")
-if os.path.exists(att_path):
-    att = pd.read_csv(att_path)
-    r1 = att[att["reach"] == 1.00]["required_HR_median_closure"].iloc[0]
-    checks.append((thr_txt, f"{float(r1):.2f}", "attainability universal-reach required HR (main+appendix)"))
-    checks.append((thr_apx, f"{float(r1):.2f}", "attainability universal-reach required HR (appendix)"))
-
-# --- extract-replicate-transmit table values (appendix eTable S6) ---
-trn_path = os.path.join(RESULTS, "rederived_ai_transmission.csv")
-if os.path.exists(trn_path):
-    trn = pd.read_csv(trn_path)
-    for _, r in trn.iterrows():
-        v = r.get("transmitted_HR_MACE_among_reached")
-        if pd.notna(v) and float(v) < 1.0:
-            checks.append((thr_apx, f"{float(v):.3f}", f"transmission HR: {r['proximal_effect']}"))
+# ======================= PORTFOLIO (Health Affairs) =======================
+if port_txt:
+    port = pd.read_csv(os.path.join(RESULTS, "rederived_portfolio_summary.csv")).set_index("metric")["value"]
+    abl = pd.read_csv(os.path.join(RESULTS, "rederived_portfolio_ablation.csv"))
+    checks += [
+        (port_txt, f"{port['point_closure_fraction']*100:.1f}%", "portfolio point closure"),
+        (port_txt, f"{port['median']*100:.1f}%", "portfolio PSA median"),
+        (port_txt, f"{port['p2.5']*100:.1f}%", "portfolio PSA 2.5%"),
+        (port_txt, f"{port['p97.5']*100:.1f}%", "portfolio PSA 97.5%"),
+        (port_txt, f"{port['robust_median']*100:.1f}%", "portfolio evidence-robust median"),
+        (port_txt, "2.4 deaths per 1,000", "gap absolute"),
+        (port_txt, "9.6", "high-vuln mortality"),
+        (port_txt, "7.2", "low-vuln mortality"),
+    ]
+    for _, r in abl.iterrows():
+        checks.append((port_txt, f"{r['marginal_contribution']*100:.1f}", f"ablation: {r['removed']}"))
+    pj = json.load(open(os.path.join(PKG, "combined-intervention-simulation", "code", "inputs.json")))
+    for it in pj["interventions"]:
+        checks.append((port_apx, f"{it['rr']:.2f} ({it['rr_low']:.2f}-{it['rr_high']:.2f})",
+                       f"portfolio appendix rr matches inputs: {it['name']}"))
+    cost_path = os.path.join(RESULTS, "rederived_portfolio_cost.csv")
+    if os.path.exists(cost_path):
+        cost = pd.read_csv(cost_path).set_index("metric")
+        da = cost.loc["deaths_averted_per_100k_per_year", "median"]
+        cly = cost.loc["cost_per_life_year_usd"]
+        checks += [
+            (port_txt, f"{da:.0f}", "cost: deaths averted per 100k median"),
+            (port_txt, f"{round(cly['median'], -3):,.0f}", "cost: cost per life-year median"),
+            (port_txt, f"{round(cly['p2_5'], -3):,.0f}", "cost: cost per life-year 2.5%"),
+            (port_txt, f"{round(cly['p97_5'], -3):,.0f}", "cost: cost per life-year 97.5%"),
+        ]
 
 fails = []
 for txt, s, desc in checks:
