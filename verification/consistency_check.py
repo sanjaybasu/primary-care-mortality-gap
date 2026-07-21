@@ -12,11 +12,11 @@ RESULTS = os.path.join(PKG, "results")
 ROOT = PKG.split(os.sep + "packaging" + os.sep)[0]
 NB = os.path.join(ROOT, "notebooks", "primary-care-world-model")
 MS_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "manuscript",
-                         "ai_effectiveness_threshold_annals.md")
+                         "ai_primary_care_threshold_mdm.md")
 MS_PORT = os.path.join(NB, "combined-intervention-simulation", "manuscript",
                        "combined_intervention_portfolio_health_affairs.md")
-APX_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "appendix",
-                          "supplementary_appendix.md")
+APX_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "manuscript",
+                          "supplementary_appendix_mdm.md")
 APX_PORT = os.path.join(NB, "combined-intervention-simulation", "appendix",
                         "supplementary_table_model_input_parameters.md")
 

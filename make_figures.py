@@ -27,18 +27,18 @@ CB = {"blue": "#0072B2", "orange": "#E69F00", "green": "#009E73",
 
 
 def fig_shortfall():
-    by = pd.read_csv(os.path.join(RESULTS, 'rederived_threshold_by_stratum.csv')).set_index('stratum')
-    Dh = float(by.loc['high', 'attributable_excess_per_1000'])
-    diff = 9.6 - 7.2
-    fig, ax = plt.subplots(figsize=(5.6, 4.0))
-    bars = ax.bar(['Total difference between communities', 'Attributable to primary care loss'],
-                  [diff, Dh], color=[CB['grey'], CB['blue']], width=0.6)
-    for b, v in zip(bars, [diff, Dh]):
-        ax.text(b.get_x()+b.get_width()/2, v+0.04, f'{v:.3f}'.rstrip('0').rstrip('.'), ha='center', fontsize=10)
-    ax.set_ylabel('Deaths per 1,000')
-    ax.set_ylim(0, diff*1.15)
-    ax.set_title('The primary care shortfall is a small part of the difference')
-    ax.tick_params(axis='x', labelsize=8)
+    import json
+    inp = json.load(open(os.path.join(PKG, 'ai-effectiveness-threshold', 'code', 'inputs.json')))
+    realized = inp['pcp_supply']['decline_per_100k']
+    projected = round(inp['adequacy_sensitivity']['shortage_per_100k'])
+    fig, ax = plt.subplots(figsize=(5.8, 4.0))
+    bars = ax.bar(['Realized, 2005-2015', 'Projected, early 2030s'], [realized, projected],
+                  color=[CB['blue'], CB['orange']], width=0.6)
+    for b, v in zip(bars, [realized, projected]):
+        ax.text(b.get_x()+b.get_width()/2, v+0.4, f'{v:g}', ha='center', fontsize=10)
+    ax.set_ylabel('Primary care physician supply loss (per 100,000)')
+    ax.set_ylim(0, projected*1.25)
+    ax.set_title('Primary care physician supply loss, realized and projected')
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_THRESH, 'figure1_shortfall.png'), dpi=300, bbox_inches='tight')
     plt.close(fig)
@@ -55,7 +55,7 @@ def fig_required_by_reach():
     ax.set_xlabel('Reach (fraction of the community served)')
     ax.set_ylabel('Required clinical AI hazard ratio')
     ax.set_xlim(0, 1.0); ax.set_ylim(0.90, 1.005)
-    ax.set_title('The required per-patient effect is small at plausible reach')
+    ax.set_title('Required clinical AI hazard ratio, by reach')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_THRESH, 'figure2_required_by_reach.png'), dpi=300, bbox_inches='tight')
@@ -80,7 +80,7 @@ def fig_equity():
     ax.set_xlabel('Reach in high-vulnerability communities')
     ax.set_ylabel('Mortality prevented per 1,000')
     ax.set_xlim(0.05, 0.60)
-    ax.set_title('Whether clinical AI narrows or widens the difference')
+    ax.set_title('Mortality prevented, by reach in high-vulnerability communities')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_THRESH, 'figure3_equity.png'), dpi=300, bbox_inches='tight')
@@ -100,7 +100,7 @@ def fig_required_psa():
     ax.set_xlabel('Required clinical AI hazard ratio, high-vulnerability communities')
     ax.set_ylabel('Probabilistic draws')
     ax.set_xlim(0.90, 1.0)
-    ax.set_title('Required per-patient effect to offset the loss (20,000 draws)')
+    ax.set_title('Distribution of the required clinical AI hazard ratio (20,000 samples)')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_THRESH, 'figure4_required_psa.png'), dpi=300, bbox_inches='tight')
