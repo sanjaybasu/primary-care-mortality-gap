@@ -56,6 +56,93 @@ def fig_threshold_heatmap():
     plt.close(fig)
 
 
+def fig_threshold_psa():
+    hr = np.load(os.path.join(RESULTS, "rederived_threshold_psa_draws.npy"))
+    s = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv")).set_index("metric")["value"]
+    med = float(s["required_hr_median"])
+    lo, hi = float(s["required_hr_p2.5"]), float(s["required_hr_p97.5"])
+    p_na = float(np.mean(hr <= 0))
+    disp = np.clip(hr, 0, 1)
+    fig, ax = plt.subplots(figsize=(6.6, 4.2))
+    ax.hist(disp, bins=60, color=CB["blue"], alpha=0.75, edgecolor="white", linewidth=0.3)
+    ax.axvline(med, color=CB["blue"], linestyle="--", linewidth=1.4, label=f"required HR median {med:.2f}")
+    ax.axvspan(lo, hi, color=CB["blue"], alpha=0.10, label=f"95% UI {lo:.2f}-{hi:.2f}")
+    ax.axvline(0.93, color=CB["green"], linestyle="-", linewidth=1.5,
+               label="community health worker 0.93")
+    ax.axvline(1.00, color=CB["red"], linestyle=":", linewidth=1.5,
+               label="demonstrated clinical AI 1.00")
+    ax.set_xlabel("Required clinical AI hazard ratio among patients reached")
+    ax.set_ylabel("Probabilistic draws")
+    ax.set_title("Required hazard ratio to close the residual gap (20,000 draws)")
+    ax.legend(loc="upper center", fontsize=7.5)
+    fig.text(0.5, -0.02,
+             f"Draws propagate structural-closure uncertainty (portfolio PSA) and reach "
+             f"[0.15-0.50]. A demonstrated effect lies to the right of the required HR in "
+             f"every draw; {p_na*100:.0f}% of draws are not achievable at any per-patient "
+             f"effect because reach is too low (shown at 0).", ha="center", fontsize=7.5, wrap=True)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG_THRESH, "figure2_required_hr_psa.png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+def fig_threshold_tornado():
+    t = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_tornado.csv"))
+    drv = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_drivers.csv")).iloc[0]
+    # swing on the required HR; None (not achievable) treated as 0 for display width
+    lo = pd.to_numeric(t["required_HR_at_low"], errors="coerce").fillna(0.0)
+    hi = pd.to_numeric(t["required_HR_at_high"], errors="coerce").fillna(0.0)
+    t = t.assign(lo=lo, hi=hi, swing=(hi - lo).abs()).sort_values("swing")
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    for y, r in enumerate(t.itertuples()):
+        left, right = sorted([r.lo, r.hi])
+        ax.plot([left, right], [y, y], color=CB["purple"], linewidth=8, alpha=0.85,
+                solid_capstyle="butt")
+        ax.text(right + 0.01, y, f"{left:.2f}-{right:.2f}", va="center", fontsize=8)
+    ax.set_yticks(range(len(t))); ax.set_yticklabels(t["parameter"], fontsize=8)
+    ax.set_xlabel("Required clinical AI hazard ratio among patients reached")
+    ax.set_xlim(0, 1.05)
+    ax.set_title("One-way sensitivity of the required hazard ratio")
+    fig.text(0.5, -0.03,
+             f"Each parameter is varied across its range with the others held at the point "
+             f"estimate; wider bars denote greater influence. In the probabilistic analysis "
+             f"reach explains {drv['variance_share_reach']*100:.0f}% and structural closure "
+             f"{drv['variance_share_structural_closure']*100:.0f}% of the variance in the "
+             f"required hazard ratio. The mortality gap and baseline mortality are varied "
+             f"+/-15% (structural sensitivity range).", ha="center", fontsize=7.5, wrap=True)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG_THRESH, "figure3_tornado.png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+def fig_threshold_attainability():
+    a = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_attainability.csv"))
+    a = a[a["required_HR_median_closure"] > 0]
+    fig, ax = plt.subplots(figsize=(6.8, 4.4))
+    ax.plot(a["reach"], a["required_HR_median_closure"], color=CB["blue"], linewidth=2,
+            label="required HR (median structural closure)")
+    band_lo = a["required_HR_low_closure"].clip(lower=0)
+    ax.fill_between(a["reach"], band_lo, a["required_HR_high_closure"].clip(upper=1),
+                    color=CB["blue"], alpha=0.15, label="structural-closure 95% range")
+    ax.axhline(0.93, color=CB["green"], linestyle="-", linewidth=1.4,
+               label="demonstrated / transmitted effect 0.93")
+    ax.axhline(1.00, color=CB["red"], linestyle=":", linewidth=1.4, label="no effect 1.00")
+    ax.set_xlabel("AI reach (fraction of high-vulnerability population)")
+    ax.set_ylabel("Required clinical AI hazard ratio among patients reached")
+    ax.set_ylim(0, 1.02); ax.set_xlim(0, 1.0)
+    ax.set_title("Reach required for a demonstrated effect to close the gap")
+    ax.legend(loc="lower right", fontsize=8)
+    fig.text(0.5, -0.02,
+             "A tool with a demonstrated hazard ratio closes the gap only where the required "
+             "curve rises to meet its effect line. Across the plausible range of structural "
+             "closure the required hazard ratio stays below the best demonstrated effect (0.93) "
+             "at every reach, so that effect does not close the residual gap at any reach; "
+             "meeting it would require structural closure above the modeled range together with "
+             "near-universal reach.", ha="center", fontsize=7.5, wrap=True)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG_THRESH, "figure4_attainability.png"), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def fig_portfolio_psa():
     full = np.load(os.path.join(RESULTS, "rederived_portfolio_psa_draws.npy")) * 100
     robust = np.load(os.path.join(RESULTS, "rederived_portfolio_robust_psa_draws.npy")) * 100
@@ -120,6 +207,9 @@ def fig_portfolio_tornado():
 
 if __name__ == "__main__":
     fig_threshold_heatmap()
+    fig_threshold_psa()
+    fig_threshold_tornado()
+    fig_threshold_attainability()
     fig_portfolio_psa()
     fig_portfolio_ablation()
     fig_portfolio_tornado()

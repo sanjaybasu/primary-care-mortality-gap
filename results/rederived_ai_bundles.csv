@@ -1,4 +1,0 @@
-bundle,gap_closure_median,gap_closure_p2.5,gap_closure_p97.5,transmitted_cv_HR,prob_net_negative,crossover_high_acuity_fraction,p_harmful_advice,net_decision_effect,basis
-A disease-specific (cause-resolved),0.0067,0.0037,0.0107,0.928,,,,,
-B generalist (counterfactual net-of-harm),,,,,0.0,0.522,0.08,,
-"C provider (net-of-harm, oversight)",,,,,,,,0.0,clinician+LLM not superior to clinician (Goh 2024); scribes change no decisions (Shin 2025)

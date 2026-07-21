@@ -1,16 +1,27 @@
-# GitHub gets code only — never data (restricted NHANES-NDI/NHIS-NDI/MEPS + processed)
+# GitHub gets CODE + public inputs only — never data or model outputs.
+# All model outputs regenerate deterministically from the code (see README).
+
+# data (raw and processed; restricted NHANES-NDI / NHIS-NDI / MEPS never leave local)
 data/
 */data/
-data/raw/
-data/individual/
 *.dat
 *.csv
-!results/*.csv
 *.parquet
 *.dta
 *.rds
 *.xlsx
 *.pt
+*.npy
 
+# model outputs (regenerate from code)
+results/
+
+# local working documents (not published)
+MANUSCRIPT_FINAL.md
+FINAL_CLEANUP_SUMMARY.md
+GITHUB_UPLOAD_CHECKLIST.md
+AI_SYSTEMATIC_REVIEW_EXPANDED.md
+REPOSITORY_STRUCTURE.md
+.DS_Store
 __pycache__/
 *.pyc

@@ -16,7 +16,7 @@ MS_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "manuscript",
 MS_PORT = os.path.join(NB, "combined-intervention-simulation", "manuscript",
                        "combined_intervention_portfolio_health_affairs.md")
 APX_THRESH = os.path.join(NB, "ai-effectiveness-threshold", "appendix",
-                          "supplementary_table_model_input_parameters.md")
+                          "supplementary_appendix.md")
 APX_PORT = os.path.join(NB, "combined-intervention-simulation", "appendix",
                         "supplementary_table_model_input_parameters.md")
 
@@ -28,6 +28,7 @@ grid = pd.read_csv(os.path.join(RESULTS, "rederived_threshold_scenario_grid.csv"
 BASELINE, GAP = 9.6, 2.4
 port_txt = open(MS_PORT).read()
 thr_txt = open(MS_THRESH).read()
+thr_apx = open(APX_THRESH).read() if os.path.exists(APX_THRESH) else ""
 
 checks = []  # (manuscript, expected_string, description)
 
@@ -57,16 +58,15 @@ checks += [
     (thr_txt, "2.4 deaths per 1,000", "gap absolute"),
     (thr_txt, "0.93", "CHW benchmark HR"),
 ]
-# grid cells that appear in Table 1
+# grid cells now live in the appendix (eTable S3)
 for _, r in grid.iterrows():
     if r["required_HR"] > 0:
-        checks.append((thr_txt, f"{r['required_HR']:.3f}".rstrip("0").rstrip("."),
+        checks.append((thr_apx, f"{r['required_HR']:.3f}".rstrip("0").rstrip("."),
                        f"grid s={r['structural_closure']} r={r['ai_reach']}"))
 
 # --- appendix parameter tables exist and match inputs.json ---
 import json
 port_apx = open(APX_PORT).read() if os.path.exists(APX_PORT) else ""
-thr_apx = open(APX_THRESH).read() if os.path.exists(APX_THRESH) else ""
 pj = json.load(open(os.path.join(PKG, "combined-intervention-simulation", "code", "inputs.json")))
 for it in pj["interventions"]:
     checks.append((port_apx, f"{it['rr']:.2f} ({it['rr_low']:.2f}-{it['rr_high']:.2f})",
@@ -112,6 +112,38 @@ if os.path.exists(bnd_path):
             checks.append((thr_txt, f"{round(b['p_harmful_advice'].iloc[0]*100):.0f}%", "bundle B harmful advice"))
         if "crossover_high_acuity_fraction" in bnd.columns and pd.notna(b["crossover_high_acuity_fraction"].iloc[0]):
             checks.append((thr_txt, f"{round(b['crossover_high_acuity_fraction'].iloc[0]*100):.0f}%", "bundle B acuity crossover"))
+
+# --- scenario analysis, one-way sensitivity, attainability (threshold manuscript) ---
+scen_path = os.path.join(RESULTS, "rederived_threshold_scenarios.csv")
+if os.path.exists(scen_path):
+    sc = pd.read_csv(scen_path)
+    base = sc[sc["scenario"] == "base case"].iloc[0]
+    opt = sc[sc["scenario"] == "optimistic"].iloc[0]
+    checks.append((thr_txt, f"{float(base['required_HR']):.2f}", "scenario base required HR"))
+    checks.append((thr_txt, f"{float(opt['required_HR']):.2f}", "scenario optimistic required HR"))
+
+tor_path = os.path.join(RESULTS, "rederived_threshold_tornado.csv")
+if os.path.exists(tor_path):
+    tor = pd.read_csv(tor_path).set_index("parameter")
+    checks.append((thr_txt, f"{float(tor.loc['AI reach','required_HR_at_high']):.2f}", "one-way reach high"))
+    checks.append((thr_txt, f"{float(tor.loc['structural gap closure','required_HR_at_low']):.2f}", "one-way closure low"))
+    checks.append((thr_txt, f"{float(tor.loc['structural gap closure','required_HR_at_high']):.2f}", "one-way closure high"))
+
+att_path = os.path.join(RESULTS, "rederived_threshold_attainability.csv")
+if os.path.exists(att_path):
+    att = pd.read_csv(att_path)
+    r1 = att[att["reach"] == 1.00]["required_HR_median_closure"].iloc[0]
+    checks.append((thr_txt, f"{float(r1):.2f}", "attainability universal-reach required HR (main+appendix)"))
+    checks.append((thr_apx, f"{float(r1):.2f}", "attainability universal-reach required HR (appendix)"))
+
+# --- extract-replicate-transmit table values (appendix eTable S6) ---
+trn_path = os.path.join(RESULTS, "rederived_ai_transmission.csv")
+if os.path.exists(trn_path):
+    trn = pd.read_csv(trn_path)
+    for _, r in trn.iterrows():
+        v = r.get("transmitted_HR_MACE_among_reached")
+        if pd.notna(v) and float(v) < 1.0:
+            checks.append((thr_apx, f"{float(v):.3f}", f"transmission HR: {r['proximal_effect']}"))
 
 fails = []
 for txt, s, desc in checks:

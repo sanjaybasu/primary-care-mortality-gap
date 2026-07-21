@@ -45,9 +45,15 @@ th = f"{NB}/ai-effectiveness-threshold"
 po = f"{NB}/combined-intervention-simulation"
 write("th_main.md", main_doc(f"{th}/manuscript/ai_effectiveness_threshold_annals.md",
     [("Figure 1. Required AI hazard ratio among patients reached, by reach and structural gap closure.",
-      f"{th}/figures/figure1_required_hr_heatmap.png")]))
+      f"{th}/figures/figure1_required_hr_heatmap.png"),
+     ("Figure 2. Distribution of the required clinical AI hazard ratio (20,000 draws).",
+      f"{th}/figures/figure2_required_hr_psa.png"),
+     ("Figure 3. One-way sensitivity of the required clinical AI hazard ratio.",
+      f"{th}/figures/figure3_tornado.png"),
+     ("Figure 4. Reach required for a demonstrated effect to close the gap.",
+      f"{th}/figures/figure4_attainability.png")]))
 write("th_title.md", supfix(open(f"{th}/submission/threshold_titlepage.md").read()))
-write("th_apx.md",   supfix(open(f"{th}/submission/threshold_appendix.md").read()))
+write("th_apx.md",   supfix(open(f"{th}/appendix/supplementary_appendix.md").read()))
 write("po_main.md", main_doc(f"{po}/manuscript/combined_intervention_portfolio_health_affairs.md",
     [("Exhibit 1. Distribution of the fraction of the mortality gap closed by the combined package.",
       f"{po}/figures/exhibit1_gap_closure_psa.png"),

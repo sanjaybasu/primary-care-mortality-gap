@@ -1,7 +1,0 @@
-metric,value
-"point_required_HR (F median closure, reach=0.30)",0.43726681976063186
-required_hr_median,0.4628200691269235
-required_hr_p2.5,0.07626748849592382
-required_hr_p97.5,0.6530825288201064
-prob_requires_HR_below_0.90,1.0
-prob_not_achievable_even_at_HR0 (reach too low),0.0109

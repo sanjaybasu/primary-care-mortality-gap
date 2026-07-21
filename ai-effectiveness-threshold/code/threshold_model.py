@@ -104,6 +104,67 @@ def main():
                               "achievable_(HR>0)": hr > 0})
     grid = pd.DataFrame(grid_rows)
 
+    # ---- one-way sensitivity (tornado) of the required HR ----
+    # Each input is moved across its range with the others held at the point/median.
+    # Reach and structural closure carry documented ranges (inputs range; portfolio PSA
+    # 2.5-97.5th percentiles); the epidemiologic gap and baseline carry a +/-15% structural
+    # sensitivity range (SENS_REL), documented as such in the appendix (not a statistical CI).
+    SENS_REL = 0.15
+    s_lo, s_hi = float(np.percentile(s_draws, 2.5)), float(np.percentile(s_draws, 97.5))
+    tornado_specs = [
+        ("AI reach", "reach", reach["low"], reach["high"]),
+        ("structural gap closure", "structural_closure", s_lo, s_hi),
+        ("mortality gap (per 1,000)", "gap", gap * (1 - SENS_REL), gap * (1 + SENS_REL)),
+        ("high-vulnerability mortality (per 1,000)", "baseline",
+         base * (1 - SENS_REL), base * (1 + SENS_REL)),
+    ]
+    tornado = []
+    for label, key, lo, hi in tornado_specs:
+        vals = {"structural_closure": s_point, "reach": r_point, "gap": gap, "baseline": base}
+        row = {"parameter": label, "low_value": round(lo, 3), "high_value": round(hi, 3)}
+        for bound, v in [("required_HR_at_low", lo), ("required_HR_at_high", hi)]:
+            vv = dict(vals); vv[key] = v
+            hr = float(required_hr(vv["structural_closure"], vv["reach"], vv["gap"], vv["baseline"]))
+            row[bound] = round(hr, 3) if hr > 0 else None
+        tornado.append(row)
+    pd.DataFrame(tornado).to_csv(os.path.join(RESULTS, "rederived_threshold_tornado.csv"), index=False)
+
+    # ---- attainability curve: required HR vs reach, with structural-closure band ----
+    reach_grid = np.round(np.arange(0.10, 1.0001, 0.05), 2)
+    att_rows = []
+    for r in reach_grid:
+        att_rows.append({
+            "reach": float(r),
+            "required_HR_median_closure": round(float(required_hr(s_point, r, gap, base)), 3),
+            "required_HR_low_closure": round(float(required_hr(s_lo, r, gap, base)), 3),
+            "required_HR_high_closure": round(float(required_hr(s_hi, r, gap, base)), 3),
+        })
+    att = pd.DataFrame(att_rows)
+    # reach at which a demonstrated/transmitted effect would suffice (required HR >= demonstrated HR)
+    bm = inp["benchmarks"]
+    attain_reach = {}
+    for name, hr_dem in [("community_health_worker", bm["community_health_worker_hr"]),
+                         ("best_transmitted_digital_htn", 0.93),
+                         ("current_clinical_ai", bm["current_clinical_ai_hr"])]:
+        # smallest reach on a fine grid where required HR (median closure) is >= demonstrated HR
+        fine = np.round(np.arange(0.05, 1.0001, 0.001), 3)
+        req = required_hr(s_point, fine, gap, base)
+        ok = np.where(req >= hr_dem)[0]
+        attain_reach[name] = float(fine[ok[0]]) if len(ok) else None
+    att.to_csv(os.path.join(RESULTS, "rederived_threshold_attainability.csv"), index=False)
+
+    # ---- formal scenario analysis (base / optimistic / pessimistic) ----
+    scen = [
+        {"scenario": "pessimistic", "structural_closure": round(s_lo, 3), "reach": reach["low"]},
+        {"scenario": "base case", "structural_closure": round(s_point, 3), "reach": reach["point"]},
+        {"scenario": "optimistic", "structural_closure": 0.50, "reach": reach["high"]},
+    ]
+    for sc in scen:
+        hr = float(required_hr(sc["structural_closure"], sc["reach"], gap, base))
+        sc["required_HR"] = round(hr, 3) if hr > 0 else None
+        sc["required_abs_reduction_per1000_among_reached"] = round(base * (1 - hr), 2) if hr > 0 else None
+    pd.DataFrame(scen).to_csv(os.path.join(RESULTS, "rederived_threshold_scenarios.csv"), index=False)
+
     # ---- write ----
     prov = {"model": "AI-effectiveness threshold (transparent re-derivation)",
             "inputs_sha256_16": ihash, "seed": seed, "n_draws": n,
@@ -114,6 +175,7 @@ def main():
                   *[{"metric": k, "value": v} for k, v in psa.items()]]
                  ).to_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv"), index=False)
     grid.to_csv(os.path.join(RESULTS, "rederived_threshold_scenario_grid.csv"), index=False)
+    np.save(os.path.join(RESULTS, "rederived_threshold_psa_draws.npy"), hr_draws)
     with open(os.path.join(RESULTS, "rederived_threshold_provenance.json"), "w") as f:
         json.dump(prov, f, indent=2)
 
@@ -130,6 +192,18 @@ def main():
     piv = grid.pivot(index="structural_closure", columns="ai_reach", values="required_HR")
     print(piv.to_string())
     print("Note: HR<=0 (blank/negative) = residual not closable by AI at that reach even at HR=0.")
+    print("\nOne-way sensitivity (required HR, others at point):")
+    for t in tornado:
+        print(f"  {t['parameter']:<42} [{t['low_value']}, {t['high_value']}] -> "
+              f"HR {t['required_HR_at_low']} .. {t['required_HR_at_high']}")
+    print("\nAttainability (smallest reach at which a demonstrated effect suffices, median closure):")
+    for k, v in attain_reach.items():
+        print(f"  {k:<32} reach {'>1.0 (not attainable)' if v is None else v}")
+    print("\nScenario analysis:")
+    for sc in scen:
+        print(f"  {sc['scenario']:<12} s={sc['structural_closure']}, r={sc['reach']} -> "
+              f"required HR {sc['required_HR']}, abs reduction "
+              f"{sc['required_abs_reduction_per1000_among_reached']}/1000")
 
 
 if __name__ == "__main__":
