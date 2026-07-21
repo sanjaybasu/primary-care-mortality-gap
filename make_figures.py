@@ -124,7 +124,7 @@ def fig_threshold_attainability():
     ax.fill_between(a["reach"], band_lo, a["required_HR_high_closure"].clip(upper=1),
                     color=CB["blue"], alpha=0.15, label="structural-closure 95% range")
     ax.axhline(0.93, color=CB["green"], linestyle="-", linewidth=1.4,
-               label="demonstrated / transmitted effect 0.93")
+               label="community health worker 0.93")
     ax.axhline(1.00, color=CB["red"], linestyle=":", linewidth=1.4, label="no effect 1.00")
     ax.set_xlabel("AI reach (fraction of high-vulnerability population)")
     ax.set_ylabel("Required clinical AI hazard ratio among patients reached")

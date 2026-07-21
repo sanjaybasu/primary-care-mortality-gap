@@ -22,7 +22,7 @@ net-of-harm. This version fixes three structural errors identified in adversaria
   empirical net decision effect is near zero.
 
 Evidence (peer-reviewed; see manuscript references):
-  Transmission: SBP 5 mmHg -> MACE HR 0.88 (BPLTTC/Yang 2026); glycemia -> mortality null (ACCORD).
+  Transmission: SBP 5 mmHg -> MACE HR 0.90 (BPLTTC IPD, Lancet 2021); glycemia -> mortality null (ACCORD).
   Cause share: cardiovascular disease is the leading single contributor to US socioeconomic /
     geographic mortality disparities; cv_share of the gap set at 0.30 (range 0.20-0.40).
   Bundle A proximal: digital-HTN SBP -2.91 mmHg (Lindsay-Perez 2025).
@@ -40,7 +40,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.abspath(os.path.join(HERE, "..", "..", "results"))
 GAP, M, S_MEDIAN = 2.4, 9.6, 0.32
-beta_sbp = math.log(0.88) / 5.0
+beta_sbp = math.log(0.90) / 5.0
 rng = np.random.default_rng(20260720)
 N = 20000
 
@@ -78,8 +78,8 @@ C = dict(net_decision_effect=provider_net_decision_effect,
          basis="clinician+LLM not superior to clinician (Goh 2024); scribes change no decisions (Shin 2025)")
 
 pd.DataFrame([
-    {"bundle": "A disease-specific (cause-resolved)", "gap_closure_median": round(A["median"], 4),
-     "gap_closure_p2.5": round(A["p2_5"], 4), "gap_closure_p97.5": round(A["p97_5"], 4),
+    {"bundle": "A disease-specific (cause-resolved)", "gap_closure_median": round(A["median"], 6),
+     "gap_closure_p2.5": round(A["p2_5"], 6), "gap_closure_p97.5": round(A["p97_5"], 6),
      "transmitted_cv_HR": A["hr_cv"]},
     {"bundle": "B generalist (counterfactual net-of-harm)", "prob_net_negative": round(B["prob_net_negative"], 3),
      "crossover_high_acuity_fraction": B["crossover_high_acuity_fraction"], "p_harmful_advice": B["p_harmful_advice"]},

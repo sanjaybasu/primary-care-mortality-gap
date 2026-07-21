@@ -144,7 +144,7 @@ def main():
     bm = inp["benchmarks"]
     attain_reach = {}
     for name, hr_dem in [("community_health_worker", bm["community_health_worker_hr"]),
-                         ("best_transmitted_digital_htn", 0.93),
+                         ("best_transmitted_digital_htn", 0.941),
                          ("current_clinical_ai", bm["current_clinical_ai_hr"])]:
         # smallest reach on a fine grid where required HR (median closure) is >= demonstrated HR
         fine = np.round(np.arange(0.05, 1.0001, 0.001), 3)

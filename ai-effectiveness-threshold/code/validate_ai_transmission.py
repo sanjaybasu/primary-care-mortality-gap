@@ -11,10 +11,10 @@ input into a derived, validated quantity.
 
 Extracted evidence (all peer-reviewed; see manuscript references):
   Transmission (proximal -> cardiovascular events):
-    SBP:  5-mmHg systolic reduction -> MACE HR 0.88  (BPLTTC IPD meta-analysis, 51 trials,
-          358,642 participants; Yang et al., Nat Med 2026, doi:10.1038/s41591-026-04514-3)
+    SBP:  5-mmHg systolic reduction -> MACE HR 0.90  (BPLTTC IPD meta-analysis, 48 trials,
+          344,716 participants; Blood Pressure Lowering Treatment Trialists' Collaboration, Lancet 2021, doi:10.1016/S0140-6736(21)00590-0)
     LDL:  1 mmol/L reduction -> major vascular event rate ratio 0.78  (CTT methodology;
-          Lincoff et al., JACC 2024, doi:10.1016/j.jacc.2024.04.048)
+          Cholesterol Treatment Trialists' (CTT) Collaboration, Lancet 2010, doi:10.1016/S0140-6736(10)61350-5)
   Replicated AI/digital proximal effects:
     Digital hypertension programs -> SBP  -2.91 mmHg (17 RCTs; Lindsay-Perez et al.,
           J Hum Hypertens 2025, doi:10.1038/s41371-025-01051-3)  and
@@ -39,7 +39,7 @@ RESULTS = os.path.abspath(os.path.join(HERE, "..", "..", "results"))
 GAP, M = 2.4, 9.6                      # mortality gap and high-vulnerability mortality per 1,000
 S_MEDIAN = 0.32                        # structural gap closure (portfolio median)
 
-SBP_MACE_HR_PER5 = 0.88                # BPLTTC / Yang 2026
+SBP_MACE_HR_PER5 = 0.90                # BPLTTC IPD meta-analysis (Lancet 2021): ~10% per 5 mmHg
 beta_sbp = math.log(SBP_MACE_HR_PER5) / 5.0   # per-mmHg log hazard
 
 def hr_from_sbp(delta_sbp_mmHg):       # delta given as positive reduction
@@ -72,7 +72,7 @@ sbp_needed_universal = math.log(req_universal) / beta_sbp
 pd.DataFrame(rows).to_csv(os.path.join(RESULTS, "rederived_ai_transmission.csv"), index=False)
 
 print("== AI-specific validation: extract -> replicate -> transmit ==")
-print(f"Transmission: 5-mmHg SBP reduction -> MACE HR {SBP_MACE_HR_PER5} (BPLTTC/Yang 2026)")
+print(f"Transmission: 5-mmHg SBP reduction -> MACE HR {SBP_MACE_HR_PER5} (BPLTTC IPD, Lancet 2021)")
 for r in rows:
     print(f"  {r['archetype']}: {r['proximal_effect']} -> HR {r['transmitted_HR_MACE_among_reached']} ({r['source']})")
 print(f"Best transmitted disease-management HR among reached (favorable to AI): {best_hr:.3f}")
