@@ -1,7 +1,4 @@
-bundle,condition,prevalence_highvuln,engagement,per_reached_HR,transmission,grade,population_rel_reduction,gap_closure_fraction,p_harmful_advice,p_incorrect_dx,net_positive,note,transmission_to_mortality,reach,required_per_patient_reduction_to_close_residual
-A disease-specific,hypertension,0.45,0.3,0.928,strong (BPLTTC),moderate,0.0097,,,,,,,,
-A disease-specific,diabetes (glycemic),0.15,0.3,1.0,weak/null (ACCORD),moderate,0.0,,,,,,,,
-A disease-specific (pooled),HTN+diabetes,,,,,,,0.0389,,,,,,,
-B generalist,,,,,,,,,0.08,0.286,False,net effect not established as positive; potential to widen the gap (backfire),,,
-C provider scribe,,,,,,,,,,,,no demonstrated decision/output change (Shin 2025),0.0,,
-C provider knowledge tool,,,,,,,,,,,,no demonstrated outcome/mortality effect (Tu 2025); threshold shown,,0.15,1.133
+bundle,gap_closure_median,gap_closure_p2.5,gap_closure_p97.5,transmitted_cv_HR,prob_net_negative,crossover_high_acuity_fraction,p_harmful_advice,net_decision_effect,basis
+A disease-specific (cause-resolved),0.0067,0.0037,0.0107,0.928,,,,,
+B generalist (counterfactual net-of-harm),,,,,0.0,0.522,0.08,,
+"C provider (net-of-harm, oversight)",,,,,,,,0.0,clinician+LLM not superior to clinician (Goh 2024); scribes change no decisions (Shin 2025)

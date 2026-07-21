@@ -97,19 +97,19 @@ if os.path.exists(drv_path):
     drv = pd.read_csv(drv_path).iloc[0]
     checks.append((thr_txt, f"{round(drv['variance_share_reach']*100):.0f}%", "driver: reach variance share"))
 
-# --- three-bundle AI analysis (threshold manuscript) ---
+# --- three-bundle AI analysis, cause-resolved + counterfactual (threshold manuscript) ---
 bnd_path = os.path.join(RESULTS, "rederived_ai_bundles.csv")
 if os.path.exists(bnd_path):
     bnd = pd.read_csv(bnd_path)
-    pooled = bnd.loc[bnd["bundle"] == "A disease-specific (pooled)", "gap_closure_fraction"]
-    if len(pooled) and pd.notna(pooled.iloc[0]):
-        checks.append((thr_txt, f"{round(pooled.iloc[0]*100):.0f}%", "bundle A gap closure"))
-    gen = bnd.loc[bnd["bundle"] == "B generalist"]
-    if len(gen):
-        if pd.notna(gen["p_harmful_advice"].iloc[0]):
-            checks.append((thr_txt, f"{round(gen['p_harmful_advice'].iloc[0]*100):.0f}%", "bundle B harmful advice"))
-        if pd.notna(gen["p_incorrect_dx"].iloc[0]):
-            checks.append((thr_txt, f"{round(gen['p_incorrect_dx'].iloc[0]*100):.0f}%", "bundle B incorrect dx"))
+    a = bnd[bnd["bundle"].str.startswith("A disease")]
+    if len(a) and "gap_closure_median" in bnd.columns and pd.notna(a["gap_closure_median"].iloc[0]):
+        checks.append((thr_txt, f"{a['gap_closure_median'].iloc[0]*100:.1f}%", "bundle A cause-resolved gap closure"))
+    b = bnd[bnd["bundle"].str.startswith("B generalist")]
+    if len(b):
+        if "p_harmful_advice" in bnd.columns and pd.notna(b["p_harmful_advice"].iloc[0]):
+            checks.append((thr_txt, f"{round(b['p_harmful_advice'].iloc[0]*100):.0f}%", "bundle B harmful advice"))
+        if "crossover_high_acuity_fraction" in bnd.columns and pd.notna(b["crossover_high_acuity_fraction"].iloc[0]):
+            checks.append((thr_txt, f"{round(b['crossover_high_acuity_fraction'].iloc[0]*100):.0f}%", "bundle B acuity crossover"))
 
 fails = []
 for txt, s, desc in checks:
