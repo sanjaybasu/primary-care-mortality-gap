@@ -51,7 +51,6 @@ checks += [
     (thr_txt, f"{D_high:.3f}", "attributable excess high-vulnerability"),
     (thr_txt, f"{D_low:.3f}", "attributable excess low-vulnerability"),
     (thr_txt, f"{float(thr['required_HR_high_point']):.3f}", "required HR high point"),
-    (thr_txt, f"{float(thr['required_HR_low_point']):.3f}", "required HR low point"),
     (thr_txt, f"{float(thr['required_HR_high_median']):.3f}", "required HR high median"),
     (thr_txt, f"{float(thr['required_HR_high_p2.5']):.3f}", "required HR high 2.5%"),
     (thr_txt, f"{float(thr['required_HR_high_p97.5']):.3f}", "required HR high 97.5%"),

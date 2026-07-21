@@ -14,32 +14,57 @@
     "baseline_per_100k": 46.6,
     "current_per_100k": 41.4,
     "decline_per_100k": 5.2,
-    "decline_range": {"low": 4.2, "high": 5.2},
+    "decline_range": {
+      "low": 4.2,
+      "high": 5.2
+    },
     "source": "Basu 2019 JAMA Intern Med: PCP density fell 46.6 to 41.4 per 100,000 nationally, 2005-2015 (within-county mean -5.2; -4.2 to -4.4 at primary-care-service-area and hospital-referral-region levels)",
     "rural_decline_per_100k": 7.0,
     "urban_decline_per_100k": 2.6,
     "rural_urban_source": "Basu 2019: rural -7.0 vs urban -2.6 per 100,000"
   },
   "mortality_elasticity": {
-    "per_10pcp_cause_specific_reduction": {"cardiovascular": 0.009, "cancer": 0.010, "respiratory": 0.014},
-    "cause_shares_of_all_cause": {"cardiovascular": 0.30, "cancer": 0.21, "respiratory": 0.08},
-    "elasticity_range_per10_allcause": {"low": 0.004, "high": 0.010},
+    "per_10pcp_cause_specific_reduction": {
+      "cardiovascular": 0.009,
+      "cancer": 0.01,
+      "respiratory": 0.014
+    },
+    "cause_shares_of_all_cause": {
+      "cardiovascular": 0.3,
+      "cancer": 0.21,
+      "respiratory": 0.08
+    },
+    "elasticity_range_per10_allcause": {
+      "low": 0.004,
+      "high": 0.01
+    },
     "source": "Basu 2019 JAMA Intern Med: per 10 additional PCP/100k, cause-specific mortality reductions of 0.9% (cardiovascular), 1.0% (cancer), 1.4% (respiratory); cause shares from CDC leading causes of death"
   },
   "ai_reach": {
-    "high_vuln": {"point": 0.20, "low": 0.10, "high": 0.40},
-    "low_vuln": {"point": 0.40, "low": 0.25, "high": 0.60},
+    "high_vuln": {
+      "point": 0.2,
+      "low": 0.1,
+      "high": 0.4
+    },
+    "low_vuln": {
+      "point": 0.4,
+      "low": 0.25,
+      "high": 0.6
+    },
     "source": "assumption anchored to digital-health uptake gradients (Rodriguez 2020 JAMA), which are lower in high-vulnerability communities"
   },
   "adequacy_sensitivity": {
-    "shortage_per_100k": 14.5,
-    "source": "AAMC 2019 projection of up to ~48,000 PCP shortage by 2034 over ~330M population (Bazemore 2024); NASEM/AAMC-adequacy reference point for the secondary analysis"
+    "shortage_per_100k": 20.3,
+    "source": "HRSA projects a shortage of about 68,000 primary care physicians by 2036 (~20 per 100,000 over the US population); AAMC projects 20,000-40,400 (Bazemore 2024; AAMC 2024; HRSA)"
   },
   "benchmarks": {
     "community_health_worker_hr": 0.93,
     "digital_htn_transmitted_hr": 0.94,
-    "current_clinical_ai_hr": 1.00,
+    "current_clinical_ai_hr": 1.0,
     "source": "Kangovi 2018/2020 (CHW); BPLTTC-transmitted digital hypertension effect (this study); clinical AI mortality synthesis (null)"
   },
-  "psa": {"n_draws": 20000, "seed": 20260720}
+  "psa": {
+    "n_draws": 20000,
+    "seed": 20260720
+  }
 }
