@@ -55,13 +55,14 @@
   },
   "adequacy_sensitivity": {
     "shortage_per_100k": 20.3,
+    "shortage_range_low": 12,
+    "shortage_range_high": 24,
     "source": "HRSA projects a shortage of about 68,000 primary care physicians by 2036 (~20 per 100,000 over the US population); AAMC projects 20,000-40,400 (Bazemore 2024; AAMC 2024; HRSA)"
   },
   "benchmarks": {
-    "community_health_worker_hr": 0.93,
     "digital_htn_transmitted_hr": 0.94,
     "current_clinical_ai_hr": 1.0,
-    "source": "Kangovi 2018/2020 (CHW); BPLTTC-transmitted digital hypertension effect (this study); clinical AI mortality synthesis (null)"
+    "source": "BPLTTC-transmitted digital hypertension effect (this study); clinical AI mortality synthesis (null)"
   },
   "psa": {
     "n_draws": 20000,

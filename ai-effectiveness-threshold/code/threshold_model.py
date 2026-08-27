@@ -68,8 +68,7 @@ def main():
         need = (D_high - D_low) / (1 - hr_dem) + m["low"] * r_low
         return need / m["high"]
     eq_rows = []
-    for name, hr_dem in [("community_health_worker", bm["community_health_worker_hr"]),
-                         ("digital_htn_transmitted", bm["digital_htn_transmitted_hr"])]:
+    for name, hr_dem in [("digital_htn_transmitted", bm["digital_htn_transmitted_hr"])]:
         rhi = reach_high_to_not_widen(hr_dem)
         eq_rows.append({"demonstrated_tool": name, "demonstrated_HR": hr_dem,
                         "high_vuln_reach_needed_to_not_widen": round(rhi, 3),
@@ -90,7 +89,7 @@ def main():
     delta_d = eps_d * (dec_d / 10.0)
     hr_req_hi = 1 - delta_d / r_hi
     Dh = delta_d * m["high"]; Dl = delta_d * m["low"]
-    hr_dem = bm["community_health_worker_hr"]
+    hr_dem = bm["digital_htn_transmitted_hr"]
     offsets_high = (m["high"] * r_hi * (1 - hr_dem)) >= Dh
     narrows = ((1 - hr_dem) * (m["high"] * r_hi - m["low"] * r_lo)) >= (Dh - Dl)
     summ = {
@@ -132,6 +131,29 @@ def main():
             "required_HR_high_at_point_reach": round(1 - d_ade / r["high"], 4)}]
     pd.DataFrame(ade).to_csv(os.path.join(RESULTS, "rederived_threshold_adequacy.csv"), index=False)
 
+    # ---- capacity pathway: required per-physician throughput increase ----
+    # If AI raises each remaining physician's effective patient throughput by theta, the
+    # physician-equivalent capacity added is theta * P1 (current supply per 100k). Setting this
+    # equal to the supply lost, S, gives theta = S / P1. This assumes the supply-mortality
+    # elasticity applies symmetrically to throughput-derived capacity, not just headcount; we
+    # state that assumption explicitly in the manuscript rather than embed it silently here.
+    P1 = sup["current_per_100k"]
+    ade_inp = inp["adequacy_sensitivity"]
+    cap_rows = []
+    for scenario, S, S_range in [
+        ("realized_decline", dec, (dr["low"], dr["high"])),
+        ("projected_shortfall", short, (ade_inp["shortage_range_low"], ade_inp["shortage_range_high"])),
+    ]:
+        theta = S / P1
+        theta_lo = S_range[0] / P1
+        theta_hi = S_range[1] / P1
+        cap_rows.append({"scenario": scenario, "supply_loss_per_100k": S,
+                          "current_supply_per_100k": P1,
+                          "required_throughput_increase": round(theta, 4),
+                          "required_throughput_increase_range_low": round(theta_lo, 4),
+                          "required_throughput_increase_range_high": round(theta_hi, 4)})
+    pd.DataFrame(cap_rows).to_csv(os.path.join(RESULTS, "rederived_threshold_capacity.csv"), index=False)
+
     # ---- write summary + provenance ----
     pd.DataFrame([{"metric": k, "value": v} for k, v in summ.items()]
                  ).to_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv"), index=False)
@@ -153,7 +175,7 @@ def main():
           f"(r={r['high']}), low {summ['required_HR_low_point']} (r={r['low']})")
     print(f"required HR high (PSA median, 95%): {summ['required_HR_high_median']} "
           f"({summ['required_HR_high_p2.5']}-{summ['required_HR_high_p97.5']})")
-    print(f"P(demonstrated CHW-level effect 0.93 offsets the high-vuln loss): "
+    print(f"P(demonstrated digital-hypertension-level effect {bm['digital_htn_transmitted_hr']} offsets the high-vuln loss): "
           f"{summ['prob_demonstrated_effect_offsets_high']}")
     print(f"P(AI narrows the gap at current reach gradient): "
           f"{summ['prob_AI_narrows_gap_at_current_reach']}")

@@ -43,17 +43,17 @@ def main_doc(src, figs):
 
 th = f"{NB}/ai-effectiveness-threshold"
 po = f"{NB}/combined-intervention-simulation"
-write("th_main.md", main_doc(f"{th}/manuscript/ai_effectiveness_threshold_annals.md",
-    [("Figure 1. Required AI hazard ratio among patients reached, by reach and structural gap closure.",
-      f"{th}/figures/figure1_required_hr_heatmap.png"),
-     ("Figure 2. Distribution of the required clinical AI hazard ratio (20,000 draws).",
-      f"{th}/figures/figure2_required_hr_psa.png"),
-     ("Figure 3. One-way sensitivity of the required clinical AI hazard ratio.",
-      f"{th}/figures/figure3_tornado.png"),
-     ("Figure 4. Reach required for a demonstrated effect to close the gap.",
-      f"{th}/figures/figure4_attainability.png")]))
-write("th_title.md", supfix(open(f"{th}/submission/threshold_titlepage.md").read()))
-write("th_apx.md",   supfix(open(f"{th}/appendix/supplementary_appendix.md").read()))
+write("th_main.md", main_doc(f"{th}/manuscript/ai_primary_care_threshold_mdm.md",
+    [("Figure 1. The primary care mortality shortfall.",
+      f"{th}/figures/figure1_shortfall.png"),
+     ("Figure 2. The required per-patient effect by reach.",
+      f"{th}/figures/figure2_required_by_reach.png"),
+     ("Figure 3. Whether clinical AI narrows or widens the mortality difference.",
+      f"{th}/figures/figure3_equity.png"),
+     ("Figure 4. Distribution of the required per-patient effect.",
+      f"{th}/figures/figure4_required_psa.png")]))
+write("th_title.md", supfix(open(f"{th}/manuscript/titlepage_mdm.md").read()))
+write("th_apx.md",   supfix(open(f"{th}/manuscript/supplementary_appendix_mdm.md").read()))
 write("po_main.md", main_doc(f"{po}/manuscript/combined_intervention_portfolio_health_affairs.md",
     [("Exhibit 1. Distribution of the fraction of the mortality gap closed by the combined package.",
       f"{po}/figures/exhibit1_gap_closure_psa.png"),
@@ -64,7 +64,6 @@ write("po_main.md", main_doc(f"{po}/manuscript/combined_intervention_portfolio_h
 write("po_title.md", supfix(open(f"{po}/submission/portfolio_titlepage.md").read()))
 write("po_apx.md",   supfix(open(f"{po}/submission/portfolio_appendix.md").read()))
 # keep a copy of the processed main for the record
-open(f"{th}/submission/threshold_main_anonymized.md","w").write(open(os.path.join(TMP,"th_main.md")).read())
 open(f"{po}/submission/portfolio_main.md","w").write(open(os.path.join(TMP,"po_main.md")).read())
 print("preprocessed (superscripts fixed) ->", TMP)
 PY
@@ -80,7 +79,7 @@ conv "$TMP/po_main.md"  "$PO/submission/portfolio_main_HealthAffairs.docx"
 conv "$TMP/po_title.md" "$PO/submission/portfolio_titlepage.docx"
 conv "$TMP/po_apx.md"   "$PO/submission/portfolio_appendix_HealthAffairs.docx"
 echo "Cover letters:"
-[ -f "$TH/submission/threshold_cover_letter.md" ] && conv "$TH/submission/threshold_cover_letter.md" "$TH/submission/threshold_cover_letter.docx"
+[ -f "$TH/manuscript/cover_letter_mdm.md" ] && conv "$TH/manuscript/cover_letter_mdm.md" "$TH/submission/threshold_cover_letter.docx"
 [ -f "$PO/submission/portfolio_cover_letter.md" ] && conv "$PO/submission/portfolio_cover_letter.md" "$PO/submission/portfolio_cover_letter.docx"
 rm -rf "$TMP"
 echo "Done."

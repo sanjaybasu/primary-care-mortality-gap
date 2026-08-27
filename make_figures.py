@@ -47,8 +47,7 @@ def fig_shortfall():
 def fig_required_by_reach():
     g = pd.read_csv(os.path.join(RESULTS, 'rederived_threshold_reach_grid.csv'))
     fig, ax = plt.subplots(figsize=(6.4, 4.6))
-    ax.plot(g['reach'], g['required_HR_to_offset'], color=CB['blue'], linewidth=2, label='required effect to offset the loss')
-    ax.axhline(0.93, color=CB['green'], linestyle='-', linewidth=1.4, label='community health worker 0.93')
+    ax.plot(g['reach'], g['required_HR_to_offset'], color=CB['blue'], linewidth=2, label='required effect to match the benchmark')
     ax.axhline(0.94, color=CB['purple'], linestyle='-', linewidth=1.2, label='digital hypertension 0.94')
     ax.axhline(1.00, color=CB['red'], linestyle=':', linewidth=1.2, label='no effect 1.00')
     ax.axvline(0.20, color=CB['grey'], linestyle='--', linewidth=1.0, label='current high-vulnerability reach')
@@ -66,8 +65,8 @@ def fig_equity():
     by = pd.read_csv(os.path.join(RESULTS, 'rederived_threshold_by_stratum.csv')).set_index('stratum')
     Dh = float(by.loc['high', 'attributable_excess_per_1000']); Dl = float(by.loc['low', 'attributable_excess_per_1000'])
     eq = pd.read_csv(os.path.join(RESULTS, 'rederived_threshold_equity.csv'))
-    cross = float(eq[eq['demonstrated_tool']=='community_health_worker']['high_vuln_reach_needed_to_not_widen'].iloc[0])
-    m_high, m_low, r_low, k = 9.6, 7.2, 0.40, (1-0.93)
+    cross = float(eq[eq['demonstrated_tool']=='digital_htn_transmitted']['high_vuln_reach_needed_to_not_widen'].iloc[0])
+    m_high, m_low, r_low, k = 9.6, 7.2, 0.40, (1-0.94)
     r = np.arange(0.05, 0.601, 0.005)
     prevented_high = m_high*r*k
     threshold = m_low*r_low*k + (Dh-Dl)
@@ -95,7 +94,6 @@ def fig_required_psa():
     ax.hist(np.clip(hr,0.9,1.0), bins=60, color=CB['blue'], alpha=0.75, edgecolor='white', linewidth=0.3)
     ax.axvline(med, color=CB['blue'], linestyle='--', linewidth=1.4, label=f'required effect median {med:.3f}')
     ax.axvspan(lo, hi, color=CB['blue'], alpha=0.10, label=f'95% interval {lo:.3f}-{hi:.3f}')
-    ax.axvline(0.93, color=CB['green'], linestyle='-', linewidth=1.4, label='community health worker 0.93')
     ax.axvline(0.94, color=CB['purple'], linestyle='-', linewidth=1.2, label='digital hypertension 0.94')
     ax.set_xlabel('Required clinical AI hazard ratio, high-vulnerability communities')
     ax.set_ylabel('Probabilistic draws')
