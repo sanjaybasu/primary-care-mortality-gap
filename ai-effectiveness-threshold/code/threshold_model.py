@@ -1,29 +1,36 @@
 #!/usr/bin/env python3
 """
-Recentered AI-effectiveness threshold model.
+AI-effectiveness threshold model.
 
-Question: primary-care supply is eroding. What per-patient effect and reach would clinical AI
-need to (1) offset the mortality attributable to that erosion and (2) do so without widening the
-mortality difference between high- and low-vulnerability communities?
+Question: primary care physician supply is falling. What per-patient effect and reach would
+clinical AI need to (1) offset the mortality associated with that loss and (2) do so without
+widening the mortality difference between high- and low-vulnerability communities?
 
-Target: the primary-care-supply-attributable excess mortality, NOT the poverty-driven Social
-Vulnerability Index mortality gap. Basu 2019 estimates primary-care density's effect on life
-expectancy at about one-fifth that of poverty, and found the supply decline was NOT
-disproportionate by county poverty or race, but was concentrated in rural areas. We therefore
-apply the national decline uniformly by vulnerability (the attributable excess is proportional
-to baseline mortality) and locate inequality in the REACH gradient. Framework: NASEM 2021.
+Benchmark: the excess mortality associated with the supply loss (Basu 2019 elasticity), not the
+poverty-driven Social Vulnerability Index mortality gap. Basu 2019 found the decline was not
+disproportionate by county poverty or race, so the loss is applied uniformly by vulnerability
+(excess proportional to baseline mortality) and inequality is located in the reach gradient.
 
 Identity:
   epsilon = sum_cause (cause_share * cause_reduction_per_10pcp)          [Basu 2019]
-  delta   = epsilon * (decline_per_100k / 10)   = relative all-cause mortality rise from the loss
-  D_k     = delta * m_k    (attributable excess mortality per 1,000 in stratum k)
-  Offset requires  m_k * r_k * (1 - HR) >= D_k, so the required per-patient effect is
-      HR_required(r) = 1 - delta / r .
-  Equity (do not widen the high-vs-low differential) for a tool with per-patient effect HR:
-      (1 - HR) * (m_high * r_high - m_low * r_low) >= D_high - D_low ,
-  which sets the high-vulnerability reach needed to prevent net widening.
+  delta   = epsilon * (S / 10)        relative all-cause mortality rise from supply loss S
+  D_k     = delta * m_k               excess mortality per 1,000 in stratum k
+  Offset requires  m_k * r_k * (1 - HR) >= D_k, so HR_required(r) = 1 - delta / r,
+  and the reach a given effect needs is r* = delta / (1 - HR).
+  Equity (do not widen the absolute high-vs-low difference) for effect HR:
+      (1 - HR) * (m_high * r_high - m_low * r_low) >= D_high - D_low .
 
-Deterministic (fixed seed); reproducible; auditable (inputs.json sourced; provenance written).
+Demonstrated effect (disease-specific AI for hypertension):
+  SBP reduction from Ong 2026 (RCTs of AI-based mobile health; Lindsay-Perez 2025 non-AI digital
+  programs as a comparison), transmitted to ALL-CAUSE mortality two ways:
+  (a) cardiovascular-death pathway (base case; parallel to the cause-specific benchmark):
+      HR = 1 - cv_share * (1 - HR_cvdeath_per5 ^ (SBP/5))     [BPLTTC 2021]
+  (b) trial all-cause pathway (sensitivity): HR = RR_allcause_per10 ^ (SBP/10)   [Ettehad 2016]
+  The BPLTTC major-cardiovascular-event HR is reported for reference only; it is not a
+  mortality effect. Upper-bound scenario: the only randomized all-cause mortality effect of an AI
+  tool (Lin 2024, AI-ECG alert, hospitalized patients), HR 0.83.
+
+Deterministic under a fixed seed; inputs hashed; provenance written.
 """
 import json, hashlib, os, platform
 import numpy as np
@@ -39,152 +46,157 @@ def elasticity(el):
     return sum(cs[c] * rd[c] for c in rd)
 
 
+def hr_cvdeath_path(sbp, hr_cv5, cv_share):
+    return 1 - cv_share * (1 - hr_cv5 ** (sbp / 5.0))
+
+
+def hr_allcause_trial_path(sbp, rr10):
+    return rr10 ** (sbp / 10.0)
+
+
 def main():
     with open(os.path.join(HERE, "inputs.json"), "rb") as f:
         raw = f.read()
     inp = json.loads(raw); ihash = hashlib.sha256(raw).hexdigest()[:16]
     mort = inp["mortality"]; sup = inp["pcp_supply"]; el = inp["mortality_elasticity"]
-    reach = inp["ai_reach"]; bm = inp["benchmarks"]
+    reach = inp["ai_reach"]; ade = inp["adequacy_sensitivity"]; htn = inp["benchmarks"]["ai_htn"]; prox = inp["benchmarks"]["digital_htn_proxy"]; ub = inp["benchmarks"]["ai_mortality_upper_bound"]
     m = {"high": mort["high_vuln_per_1000"], "low": mort["low_vuln_per_1000"]}
-    eps = elasticity(el)
-    dec = sup["decline_per_100k"]
     r = {"high": reach["high_vuln"]["point"], "low": reach["low_vuln"]["point"]}
-    delta_pt = eps * (dec / 10.0)                     # uniform relative mortality rise
+    eps = elasticity(el)
+    scen = {"realized": sup["decline_per_100k"], "projected": ade["shortage_per_100k"],
+            "rural": sup["rural_decline_per_100k"]}
+    delta = {k: eps * S / 10.0 for k, S in scen.items()}
 
-    # ---- point estimates by stratum ----
-    rows = []
-    for k in ("high", "low"):
-        Dk = delta_pt * m[k]
-        rows.append({"stratum": k, "baseline_mortality_per_1000": m[k],
-                     "attributable_excess_per_1000": round(Dk, 4),
-                     "required_HR_to_offset_at_point_reach": round(1 - delta_pt / r[k], 4)})
-    by = pd.DataFrame(rows).set_index("stratum")
-    by.to_csv(os.path.join(RESULTS, "rederived_threshold_by_stratum.csv"))
-    D_high = by.loc["high", "attributable_excess_per_1000"]
-    D_low = by.loc["low", "attributable_excess_per_1000"]
+    # ---- demonstrated effect, transmitted to all-cause mortality ----
+    sbp = htn["sbp_reduction_mmHg"]
+    hr_dem = {"cvdeath": hr_cvdeath_path(sbp, htn["cvdeath_hr_per_5mmHg"], htn["cv_share_of_deaths"]),
+              "allcause_trial": hr_allcause_trial_path(sbp, htn["allcause_rr_per_10mmHg"]),
+              "digital_proxy_cvdeath": hr_cvdeath_path(prox["sbp_reduction_mmHg"], htn["cvdeath_hr_per_5mmHg"], htn["cv_share_of_deaths"]),
+              "inpatient_ai_upper_bound": ub["hr"]}
+    hr_mace_reference = htn["mace_hr_per_5mmHg"] ** (sbp / 5.0)
+    BASE = "cvdeath"
 
-    # ---- equity: high-vuln reach needed so a demonstrated effect does not widen the gap ----
-    def reach_high_to_not_widen(hr_dem, r_low=r["low"]):
-        need = (D_high - D_low) / (1 - hr_dem) + m["low"] * r_low
-        return need / m["high"]
-    eq_rows = []
-    for name, hr_dem in [("digital_htn_transmitted", bm["digital_htn_transmitted_hr"])]:
-        rhi = reach_high_to_not_widen(hr_dem)
-        eq_rows.append({"demonstrated_tool": name, "demonstrated_HR": hr_dem,
-                        "high_vuln_reach_needed_to_not_widen": round(rhi, 3),
-                        "current_high_vuln_reach": r["high"],
-                        "widens_gap_at_current_reach": bool(rhi > r["high"])})
-    pd.DataFrame(eq_rows).to_csv(os.path.join(RESULTS, "rederived_threshold_equity.csv"), index=False)
+    def reach_to_not_widen(hr, d, r_low):
+        dD = d * (m["high"] - m["low"])
+        return (dD / (1 - hr) + m["low"] * r_low) / m["high"]
 
-    # ---- PSA over elasticity and reach ----
-    n = inp["psa"]["n_draws"]; seed = inp["psa"]["seed"]
-    rng = np.random.default_rng(seed)
-    eps_d = rng.uniform(el["elasticity_range_per10_allcause"]["low"],
-                        el["elasticity_range_per10_allcause"]["high"], n)
-    dr = sup["decline_range"]
-    dec_d = rng.uniform(dr["low"], dr["high"], n)
-    rh = reach["high_vuln"]; rl = reach["low_vuln"]
+    # ---- deterministic results: scenario x transmission ----
+    det = []
+    for sk, d in delta.items():
+        row = {"scenario": sk, "supply_loss_per_100k": scen[sk], "rel_mortality_rise": d,
+               "excess_high_per_1000": d * m["high"], "excess_low_per_1000": d * m["low"],
+               "required_HR_high_at_point_reach": 1 - d / r["high"],
+               "required_HR_low_at_point_reach": 1 - d / r["low"],
+               "required_HR_at_full_reach": 1 - d}
+        for tk, h in hr_dem.items():
+            row[f"{tk}_HR"] = h
+            row[f"{tk}_meets_at_point_reach"] = bool(h <= 1 - d / r["high"])
+            row[f"{tk}_reach_needed_to_match"] = d / (1 - h)
+            row[f"{tk}_reach_needed_to_not_widen"] = reach_to_not_widen(h, d, r["low"])
+        det.append(row)
+    det = pd.DataFrame(det)
+    det.to_csv(os.path.join(RESULTS, "threshold_deterministic.csv"), index=False)
+
+    # equity threshold across the low-vulnerability reach range (realized decline)
+    het = []
+    for tk, h in hr_dem.items():
+        for label, r_lo in [("low", reach["low_vuln"]["low"]), ("point", reach["low_vuln"]["point"]),
+                            ("high", reach["low_vuln"]["high"])]:
+            het.append({"transmission": tk, "low_vuln_reach_scenario": label, "low_vuln_reach": r_lo,
+                        "high_vuln_reach_needed_to_not_widen": reach_to_not_widen(h, delta["realized"], r_lo)})
+    pd.DataFrame(het).to_csv(os.path.join(RESULTS, "threshold_equity_heterogeneity.csv"), index=False)
+
+    # ---- probabilistic sensitivity analysis ----
+    n = inp["psa"]["n_draws"]; rng = np.random.default_rng(inp["psa"]["seed"])
+    eps_d = rng.uniform(el["elasticity_range_per10_allcause"]["low"], el["elasticity_range_per10_allcause"]["high"], n)
+    dec_d = rng.uniform(sup["decline_range"]["low"], sup["decline_range"]["high"], n)
+    proj_d = rng.triangular(ade["shortage_range_low"], ade["shortage_per_100k"], ade["shortage_range_high"], n)
+    rh, rl = reach["high_vuln"], reach["low_vuln"]
     r_hi = rng.triangular(rh["low"], rh["point"], rh["high"], n)
     r_lo = rng.triangular(rl["low"], rl["point"], rl["high"], n)
-    delta_d = eps_d * (dec_d / 10.0)
-    hr_req_hi = 1 - delta_d / r_hi
-    Dh = delta_d * m["high"]; Dl = delta_d * m["low"]
-    hr_dem = bm["digital_htn_transmitted_hr"]
-    offsets_high = (m["high"] * r_hi * (1 - hr_dem)) >= Dh
-    narrows = ((1 - hr_dem) * (m["high"] * r_hi - m["low"] * r_lo)) >= (Dh - Dl)
-    summ = {
-        "elasticity_per10_allcause_point": round(eps, 5),
-        "attributable_excess_high_per_1000": D_high,
-        "attributable_excess_low_per_1000": D_low,
-        "required_HR_high_point": round(1 - delta_pt / r["high"], 4),
-        "required_HR_low_point": round(1 - delta_pt / r["low"], 4),
-        "required_HR_high_median": round(float(np.median(hr_req_hi)), 4),
-        "required_HR_high_p2.5": round(float(np.percentile(hr_req_hi, 2.5)), 4),
-        "required_HR_high_p97.5": round(float(np.percentile(hr_req_hi, 97.5)), 4),
-        "prob_demonstrated_effect_offsets_high": round(float(np.mean(offsets_high)), 3),
-        "prob_AI_narrows_gap_at_current_reach": round(float(np.mean(narrows)), 3),
-    }
-    np.save(os.path.join(RESULTS, "rederived_threshold_psa_draws.npy"), hr_req_hi)
+    lo, hi = htn["sbp_reduction_ci95"]
+    sbp_d = np.clip(rng.normal(sbp, (hi - lo) / 3.92, n), 0, None)
+    rlo, rhi_ = htn["allcause_rr_per_10mmHg_ci95"]
+    rr10_d = np.exp(rng.normal(np.log(htn["allcause_rr_per_10mmHg"]), (np.log(rhi_) - np.log(rlo)) / 3.92, n))
+    m_hi_d = rng.uniform(*mort["high_vuln_range"], n); m_lo_d = rng.uniform(*mort["low_vuln_range"], n)
+    ulo, uhi = ub["ci95"]
+    ub_d = np.exp(rng.normal(np.log(ub["hr"]), (np.log(uhi) - np.log(ulo)) / 3.92, n))
+    hr_d = {"cvdeath": hr_cvdeath_path(sbp_d, htn["cvdeath_hr_per_5mmHg"], htn["cv_share_of_deaths"]),
+            "allcause_trial": hr_allcause_trial_path(sbp_d, rr10_d),
+            "inpatient_ai_upper_bound": ub_d}
+    psa = {}
+    for sk, S_d in [("realized", dec_d), ("projected", proj_d)]:
+        d_d = eps_d * S_d / 10.0
+        req = 1 - d_d / r_hi
+        psa[f"{sk}_required_HR_high_median"] = float(np.median(req))
+        psa[f"{sk}_required_HR_high_p2.5"] = float(np.percentile(req, 2.5))
+        psa[f"{sk}_required_HR_high_p97.5"] = float(np.percentile(req, 97.5))
+        Dh = d_d * m_hi_d; Dl = d_d * m_lo_d
+        for tk, h in hr_d.items():
+            meets = h <= req
+            widens = (1 - h) * (m_hi_d * r_hi - m_lo_d * r_lo) < (Dh - Dl)
+            psa[f"{sk}_{tk}_prob_meets_requirement"] = float(np.mean(meets))
+            psa[f"{sk}_{tk}_prob_widens"] = float(np.mean(widens))
+            ordered = r_hi < r_lo
+            psa[f"{sk}_{tk}_prob_widens_given_lower_high_reach"] = float(np.mean(widens[ordered]))
+            if True:
+                psa[f"{tk}_HR_median"] = float(np.median(h))
+                psa[f"{tk}_HR_p2.5"] = float(np.percentile(h, 2.5))
+                psa[f"{tk}_HR_p97.5"] = float(np.percentile(h, 97.5))
+        if sk == "realized":
+            np.save(os.path.join(RESULTS, "threshold_psa_required_hr_realized.npy"), req)
+            np.save(os.path.join(RESULTS, "threshold_psa_demonstrated_hr_cvdeath.npy"), hr_d["cvdeath"])
+    psa["share_draws_high_reach_below_low_reach"] = float(np.mean(r_hi < r_lo))
 
-    # ---- reach grid: required HR to offset the loss vs reach ----
-    reach_grid = np.round(np.arange(0.05, 1.0001, 0.05), 2)
-    grid = [{"reach": float(rr), "required_HR_to_offset": round(1 - delta_pt / rr, 4)}
-            for rr in reach_grid]
-    pd.DataFrame(grid).to_csv(os.path.join(RESULTS, "rederived_threshold_reach_grid.csv"), index=False)
+    # reach needed (with uncertainty) and acceptability by reach
+    accept = []
+    for sk, S_d in [("realized", dec_d), ("projected", proj_d)]:
+        d_d = eps_d * S_d / 10.0
+        for tk, h in hr_d.items():
+            need = d_d / np.clip(1 - h, 1e-12, None)
+            psa[f"{sk}_{tk}_reach_needed_median"] = float(np.median(need))
+            psa[f"{sk}_{tk}_reach_needed_p2.5"] = float(np.percentile(need, 2.5))
+            psa[f"{sk}_{tk}_reach_needed_p97.5"] = float(np.percentile(need, 97.5))
+            psa[f"{sk}_{tk}_prob_not_attainable"] = float(np.mean(need > 1))
+            for rr in np.round(np.arange(0.01, 1.0001, 0.01), 2):
+                accept.append({"scenario": sk, "transmission": tk, "reach": float(rr),
+                               "prob_meets": float(np.mean(h <= 1 - d_d / rr))})
+    pd.DataFrame(accept).to_csv(os.path.join(RESULTS, "threshold_acceptability.csv"), index=False)
+    # equity: reach parity alone (AI's own effect does not widen the post-loss gap)
+    psa["parity_reach_high_point"] = m["low"] * r["low"] / m["high"]
 
-    # ---- sensitivity 1: rural vs urban concentration of the loss ----
-    ru = []
-    for locale, d in [("rural", sup["rural_decline_per_100k"]),
-                      ("urban", sup["urban_decline_per_100k"])]:
-        dloc = eps * (d / 10.0)
-        ru.append({"locale": locale, "supply_decline_per_100k": d,
-                   "rel_mortality_increase": round(dloc, 5),
-                   "attributable_excess_per_1000_at_high_vuln_mortality": round(dloc * m["high"], 4)})
-    pd.DataFrame(ru).to_csv(os.path.join(RESULTS, "rederived_threshold_rural_urban.csv"), index=False)
+    # ---- reach grid ----
+    grid = pd.DataFrame({"reach": np.round(np.arange(0.01, 1.0001, 0.01), 2)})
+    for sk in ("realized", "projected"):
+        grid[f"required_HR_{sk}"] = 1 - delta[sk] / grid["reach"]
+    grid.to_csv(os.path.join(RESULTS, "threshold_reach_grid.csv"), index=False)
 
-    # ---- sensitivity 2: NASEM/AAMC adequacy reference point ----
-    short = inp["adequacy_sensitivity"]["shortage_per_100k"]
-    d_ade = eps * (short / 10.0)
-    ade = [{"reference": "NASEM/AAMC adequacy (shortage)", "shortage_per_100k": short,
-            "rel_mortality_increase": round(d_ade, 5),
-            "attributable_excess_high_per_1000": round(d_ade * m["high"], 4),
-            "required_HR_high_at_point_reach": round(1 - d_ade / r["high"], 4)}]
-    pd.DataFrame(ade).to_csv(os.path.join(RESULTS, "rederived_threshold_adequacy.csv"), index=False)
+    # ---- capacity pathway ----
+    P1 = sup["current_per_100k"]; phi_inp = inp["capacity_discount"]
+    cap = []
+    for sk, S, (Slo, Shi) in [("realized", scen["realized"], (sup["decline_range"]["low"], sup["decline_range"]["high"])),
+                              ("projected", scen["projected"], (ade["shortage_range_low"], ade["shortage_range_high"]))]:
+        for phi in np.round(np.linspace(phi_inp["range_low"], phi_inp["range_high"], 6), 2):
+            cap.append({"scenario": sk, "phi": float(phi), "required_throughput": S / (P1 * phi),
+                        "range_low": Slo / (P1 * phi), "range_high": Shi / (P1 * phi)})
+    pd.DataFrame(cap).to_csv(os.path.join(RESULTS, "threshold_capacity.csv"), index=False)
 
-    # ---- capacity pathway: required per-physician throughput increase ----
-    # If AI raises each remaining physician's effective patient throughput by theta, the
-    # physician-equivalent capacity added is theta * P1 (current supply per 100k). Setting this
-    # equal to the supply lost, S, gives theta = S / P1. This assumes the supply-mortality
-    # elasticity applies symmetrically to throughput-derived capacity, not just headcount; we
-    # state that assumption explicitly in the manuscript rather than embed it silently here.
-    P1 = sup["current_per_100k"]
-    ade_inp = inp["adequacy_sensitivity"]
-    cap_rows = []
-    for scenario, S, S_range in [
-        ("realized_decline", dec, (dr["low"], dr["high"])),
-        ("projected_shortfall", short, (ade_inp["shortage_range_low"], ade_inp["shortage_range_high"])),
-    ]:
-        theta = S / P1
-        theta_lo = S_range[0] / P1
-        theta_hi = S_range[1] / P1
-        cap_rows.append({"scenario": scenario, "supply_loss_per_100k": S,
-                          "current_supply_per_100k": P1,
-                          "required_throughput_increase": round(theta, 4),
-                          "required_throughput_increase_range_low": round(theta_lo, 4),
-                          "required_throughput_increase_range_high": round(theta_hi, 4)})
-    pd.DataFrame(cap_rows).to_csv(os.path.join(RESULTS, "rederived_threshold_capacity.csv"), index=False)
+    # ---- canonical summary ----
+    canon = {"inputs_sha256_16": ihash, "seed": inp["psa"]["seed"], "n_draws": n,
+             "elasticity_per10_allcause": eps, "base_transmission": BASE,
+             "demonstrated_HR": hr_dem, "mace_HR_reference_not_mortality": hr_mace_reference,
+             "deterministic": det.set_index("scenario").to_dict(orient="index"), "psa": psa,
+             "python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__}
+    with open(os.path.join(RESULTS, "threshold_canonical.json"), "w") as f:
+        json.dump(canon, f, indent=2)
 
-    # ---- write summary + provenance ----
-    pd.DataFrame([{"metric": k, "value": v} for k, v in summ.items()]
-                 ).to_csv(os.path.join(RESULTS, "rederived_threshold_summary.csv"), index=False)
-    prov = {"model": "Recentered PC-attributable AI threshold", "inputs_sha256_16": ihash,
-            "seed": seed, "n_draws": n, "python": platform.python_version(),
-            "numpy": np.__version__, "pandas": pd.__version__,
-            "generated_utc": os.environ.get("REDERIVE_TS", "set REDERIVE_TS for stamped run")}
-    with open(os.path.join(RESULTS, "rederived_threshold_provenance.json"), "w") as f:
-        json.dump(prov, f, indent=2)
-
-    # ---- console ----
-    print("== Recentered PC-attributable AI threshold ==")
-    print(f"inputs {ihash} | seed {seed} | draws {n}")
-    print(f"all-cause mortality elasticity: {eps*100:.2f}% per 10 PCP/100k")
-    print(f"national supply decline: {dec} per 100k (46.6->41.4, Basu 2019); uniform by poverty")
-    print(f"relative mortality rise from the loss: {delta_pt*100:.2f}%")
-    print(f"attributable excess: high-vuln {D_high:.3f}/1,000, low-vuln {D_low:.3f}/1,000")
-    print(f"required per-patient HR to offset at point reach: high {summ['required_HR_high_point']} "
-          f"(r={r['high']}), low {summ['required_HR_low_point']} (r={r['low']})")
-    print(f"required HR high (PSA median, 95%): {summ['required_HR_high_median']} "
-          f"({summ['required_HR_high_p2.5']}-{summ['required_HR_high_p97.5']})")
-    print(f"P(demonstrated digital-hypertension-level effect {bm['digital_htn_transmitted_hr']} offsets the high-vuln loss): "
-          f"{summ['prob_demonstrated_effect_offsets_high']}")
-    print(f"P(AI narrows the gap at current reach gradient): "
-          f"{summ['prob_AI_narrows_gap_at_current_reach']}")
-    print("Equity - high-vuln reach needed so a demonstrated effect does not widen the gap:")
-    for row in eq_rows:
-        print(f"  {row['demonstrated_tool']:<26} (HR {row['demonstrated_HR']}): reach >= "
-              f"{row['high_vuln_reach_needed_to_not_widen']} (current {row['current_high_vuln_reach']}; "
-              f"{'WIDENS' if row['widens_gap_at_current_reach'] else 'ok'})")
-    print(f"Rural loss -7.0 vs urban -2.6 per 100k -> attributable excess concentrates rural.")
+    print(f"inputs {ihash} | elasticity {eps*100:.3f}% per 10 PCP/100k")
+    for tk, h in hr_dem.items():
+        print(f"demonstrated all-cause HR ({tk}): {h:.4f}")
+    print(f"(MACE reference, not mortality: {hr_mace_reference:.4f})")
+    print(det.round(4).T.to_string())
+    for k, v in psa.items():
+        print(f"{k}: {v:.4f}")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,16 @@
   "mortality": {
     "high_vuln_per_1000": 9.6,
     "low_vuln_per_1000": 7.2,
-    "source": "CDC WONDER age-adjusted all-cause mortality by CDC Social Vulnerability Index quartile"
+    "source": "CDC WONDER age-adjusted all-cause mortality by CDC Social Vulnerability Index quartile",
+    "high_vuln_range": [
+      9.1,
+      10.1
+    ],
+    "low_vuln_range": [
+      6.8,
+      7.6
+    ],
+    "note": "Age-adjusted all-cause mortality by SVI quartile; used as annual deaths per 1,000 residents"
   },
   "pcp_supply": {
     "baseline_per_100k": 46.6,
@@ -38,7 +47,8 @@
       "low": 0.004,
       "high": 0.01
     },
-    "source": "Basu 2019 JAMA Intern Med: per 10 additional PCP/100k, cause-specific mortality reductions of 0.9% (cardiovascular), 1.0% (cancer), 1.4% (respiratory); cause shares from CDC leading causes of death"
+    "source": "Basu 2019 JAMA Intern Med: per 10 additional PCP/100k, cause-specific mortality reductions of 0.9% (cardiovascular), 1.0% (cancer), 1.4% (respiratory); cause shares from CDC leading causes of death",
+    "elasticity_range_note": "Assumed range around the derived point estimate (0.59%); not reported as a range in the source"
   },
   "ai_reach": {
     "high_vuln": {
@@ -55,17 +65,66 @@
   },
   "adequacy_sensitivity": {
     "shortage_per_100k": 20.3,
-    "shortage_range_low": 12,
+    "shortage_range_low": 6,
     "shortage_range_high": 24,
-    "source": "HRSA projects a shortage of about 68,000 primary care physicians by 2036 (~20 per 100,000 over the US population); AAMC projects 20,000-40,400 (Bazemore 2024; AAMC 2024; HRSA)"
+    "source": "HRSA/NCHWA Physician Workforce: Projections 2023-2038 (Dec 2025) projects a shortage of 70,610 primary care physicians by 2038 (~20 per 100,000 over the US population; point estimate); AAMC 2024 projects 20,200-40,400 primary care physicians by 2036 and Bazemore 2024 estimates growth needs through 2040 (used to bound the sensitivity range)",
+    "range_note": "Lower bound 6 per 100,000 = AAMC 2024 low projection (20,200 primary care physicians) over ~340 million US residents; point 20.3 = HRSA/NCHWA shortage of 70,610 by 2038; upper bound 24 retained from prior specification (source to confirm). A shortage relative to projected demand, treated as a supply deficit of equal size."
+  },
+  "capacity_discount": {
+    "point": 1.0,
+    "range_low": 0.5,
+    "range_high": 1.0,
+    "source": "Formalizes the elasticity-symmetry assumption (physician-equivalent capacity added through efficiency has the same mortality value as capacity added through hiring) as an explicit, varied parameter rather than a fixed, unstated assumption. Point estimate 1.0 reproduces the base-case symmetric assumption; the range extends to 0.5 (a throughput-increased visit delivers half the mortality-relevant value of an additional physician) as an unvalidated bounding scenario, since no study has directly compared the two margins on a mortality outcome."
   },
   "benchmarks": {
-    "digital_htn_transmitted_hr": 0.94,
     "current_clinical_ai_hr": 1.0,
-    "source": "BPLTTC-transmitted digital hypertension effect (this study); clinical AI mortality synthesis (null)"
+    "source": "Disease-specific AI effect transmitted to all-cause mortality in code (base: CV-death pathway; sensitivity: trial all-cause pathway).",
+    "ai_htn": {
+      "sbp_reduction_mmHg": 3.18,
+      "sbp_reduction_ci95": [
+        0.86,
+        5.5
+      ],
+      "sbp_source": "Ong 2026 EClinicalMedicine meta-analysis of RCTs: AI-based mobile health interventions, SBP mean difference -3.18 mmHg (95% CI -5.50 to -0.86); low certainty",
+      "allcause_rr_per_10mmHg": 0.87,
+      "allcause_rr_per_10mmHg_ci95": [
+        0.84,
+        0.91
+      ],
+      "allcause_source": "Ettehad 2016 Lancet meta-analysis of 123 BP-lowering RCTs: all-cause mortality RR 0.87 (0.84-0.91) per 10 mmHg SBP reduction",
+      "mace_hr_per_5mmHg": 0.9,
+      "mace_source": "BPLTTC 2021 Lancet IPD: major cardiovascular events HR ~0.90 per 5 mmHg (cardiovascular-event transmission; reported as a sensitivity only, not an all-cause effect)",
+      "cvdeath_hr_per_5mmHg": 0.95,
+      "cvdeath_source": "BPLTTC 2021 Lancet IPD (48 RCTs): 5 mm Hg SBP reduction reduced cardiovascular death by 5%; all-cause transmission = 1 - cv_share*(1 - HR_cvdeath^(SBP/5)), non-cardiovascular deaths assigned no effect (parallel to the cause-specific construction of the benchmark)",
+      "cv_share_of_deaths": 0.3
+    },
+    "digital_htn_proxy": {
+      "sbp_reduction_mmHg": 2.91,
+      "sbp_reduction_ci95": [
+        1.7,
+        4.1
+      ],
+      "sbp_source": "Lindsay-Perez 2025 J Hum Hypertens: digital (non-AI) lifestyle interventions in hypertension; comparison only"
+    },
+    "ai_mortality_upper_bound": {
+      "hr": 0.83,
+      "ci95": [
+        0.7,
+        0.99
+      ],
+      "source": "Lin 2024 Nat Med pragmatic RCT: AI-ECG alert, 90-day all-cause mortality among hospitalized patients (not primary care); upper-bound scenario only"
+    }
   },
   "psa": {
     "n_draws": 20000,
-    "seed": 20260720
+    "seed": 20260720,
+    "distributions": {
+      "elasticity": "uniform over published range (no distributional information)",
+      "supply_loss_realized": "uniform 4.2-5.2 (range across geographic units in source)",
+      "supply_loss_projected": "triangular(12, 20.3, 24)",
+      "reach": "triangular(low, point, high), independent",
+      "sbp_reduction": "normal, SE from 95% CI",
+      "allcause_rr_per10": "lognormal, SE from 95% CI"
+    }
   }
 }
