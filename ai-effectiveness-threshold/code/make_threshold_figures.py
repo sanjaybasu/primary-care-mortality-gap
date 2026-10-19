@@ -97,7 +97,7 @@ def fig3_acceptability():
     ax.set_xlim(0, 1); ax.set_ylim(0, 1.0)
     ax.set_xlabel("Reach in high-vulnerability communities")
     ax.set_ylabel("Probability that AI for hypertension offsets the excess")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=7.5, frameon=False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=7.5, frameon=False, handlelength=4.5)
     save(fig, "figure3_acceptability")
 
 
