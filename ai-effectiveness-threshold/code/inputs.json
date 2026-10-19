@@ -66,9 +66,9 @@
   "adequacy_sensitivity": {
     "shortage_per_100k": 20.3,
     "shortage_range_low": 6,
-    "shortage_range_high": 24,
+    "shortage_range_high": 20.3,
     "source": "HRSA/NCHWA Physician Workforce: Projections 2023-2038 (Dec 2025) projects a shortage of 70,610 primary care physicians by 2038 (~20 per 100,000 over the US population; point estimate); AAMC 2024 projects 20,200-40,400 primary care physicians by 2036 and Bazemore 2024 estimates growth needs through 2040 (used to bound the sensitivity range)",
-    "range_note": "Lower bound 6 per 100,000 = AAMC 2024 low projection (20,200 primary care physicians) over ~340 million US residents; point 20.3 = HRSA/NCHWA shortage of 70,610 by 2038; upper bound 24 retained from prior specification (source to confirm). A shortage relative to projected demand, treated as a supply deficit of equal size."
+    "range_note": "Range spans published projections: lower bound 6 per 100,000 = AAMC 2024 low projection (20,200 primary care physicians by 2036) over ~340 million US residents; point and upper bound 20.3 = HRSA/NCHWA shortage of 70,610 by 2038, the highest published projection. A shortage relative to projected demand, treated as a supply deficit of equal size."
   },
   "capacity_discount": {
     "point": 1.0,
@@ -121,7 +121,7 @@
     "distributions": {
       "elasticity": "uniform over published range (no distributional information)",
       "supply_loss_realized": "uniform 4.2-5.2 (range across geographic units in source)",
-      "supply_loss_projected": "triangular(12, 20.3, 24)",
+      "supply_loss_projected": "triangular(6, 20.3, 20.3): mode at the HRSA point, which is also the highest published projection",
       "reach": "triangular(low, point, high), independent",
       "sbp_reduction": "normal, SE from 95% CI",
       "allcause_rr_per10": "lognormal, SE from 95% CI"
